@@ -1,1 +1,545 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+}
 
+body, html {
+    height: 100%;
+    overflow: hidden;
+}
+
+#desktop {
+    background: #2a4d69;
+    background-size: cover;
+    height: calc(100vh - 45px);
+    position: relative;
+    padding: 20px;
+}
+
+/* Ícones */
+.shortcut {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    color: white;
+    text-align: center;
+    cursor: move;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+#shortcut-notepad { top: 20px; left: 20px; }
+#shortcut-settings { top: 120px; left: 20px; }
+#shortcut-calc { top: 220px; left: 20px; }
+#shortcut-files { top: 320px; left: 20px; }
+
+.shortcut:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.shortcut-icon {
+    font-size: 32px;
+}
+
+/* Janelas */
+.window {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0px 8px 24px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+}
+
+.window-header {
+    background: #f3f3f3;
+    color: #333;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+}
+
+.window-title {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.window-controls button {
+    background: none;
+    border: none;
+    width: 28px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 12px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.window-controls button:hover {
+    background: #e5e5e5;
+}
+
+.window-controls .close-btn:hover {
+    background: #e81123;
+    color: white;
+}
+
+.window-content {
+    flex: 1;
+    padding: 10px;
+    background: white;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+    overflow: hidden;
+}
+
+textarea {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 14px;
+}
+
+.window-drag-border {
+    position: absolute;
+    background: transparent;
+    z-index: 1;
+}
+.border-top { top: -4px; left: 4px; right: 4px; height: 8px; cursor: move; }
+.border-bottom { bottom: -4px; left: 4px; right: 4px; height: 8px; cursor: move; }
+.border-left { left: -4px; top: 4px; bottom: 4px; width: 8px; cursor: move; }
+.border-right { right: -4px; top: 4px; bottom: 4px; width: 8px; cursor: move; }
+
+.window-resize-handle {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 14px;
+    height: 14px;
+    cursor: se-resize;
+    z-index: 2;
+    background: transparent;
+}
+
+/* Configurações */
+.settings-layout {
+    display: flex;
+    padding: 0;
+    height: 100%;
+}
+
+.settings-sidebar {
+    width: 120px;
+    background: #f9f9f9;
+    border-right: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 0;
+}
+
+.settings-sidebar button {
+    background: none;
+    border: none;
+    padding: 10px 15px;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.settings-sidebar button.active {
+    background: #e2e2e2;
+    font-weight: bold;
+}
+
+.settings-body {
+    flex: 1;
+    padding: 20px;
+}
+
+.settings-body h3 {
+    margin-bottom: 5px;
+    font-size: 16px;
+}
+
+.settings-body p {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.color-picker-grid {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.color-ball {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid rgba(0,0,0,0.1);
+    transition: transform 0.2s, border-color 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    display: block;
+    background-size: cover !important;
+    background-position: center !important;
+}
+
+.color-ball:hover {
+    transform: scale(1.15);
+    border-color: #000;
+}
+
+.color-blue { background: #2a4d69 !important; }
+.color-purple { background: #4b357a !important; }
+.color-dark { background: #1e1e1e !important; }
+.color-green { background: #1e4620 !important; }
+.color-sunset { background: #b85d32 !important; }
+.color-default { 
+    background: url('https://picsum.photos/200/200') no-repeat center center !important; 
+    border-radius: 8px;
+}
+
+.color-upload {
+    background: #f1f1f1 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    border-radius: 8px;
+    border: 2px dashed #bbb;
+}
+
+/* Explorador de Arquivos */
+.file-manager-layout {
+    display: flex;
+    padding: 0;
+    height: 100%;
+}
+
+.file-manager-sidebar {
+    width: 135px;
+    background: #f4f4f4;
+    border-right: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 0;
+    gap: 2px;
+}
+
+.file-manager-sidebar button {
+    background: none;
+    border: none;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 13px;
+    cursor: pointer;
+    width: 100%;
+    border-left: 3px solid transparent;
+}
+
+.file-manager-sidebar button:hover {
+    background: rgba(0,0,0,0.04);
+}
+
+.file-manager-sidebar button.active {
+    background: #e5e5e5;
+    font-weight: 500;
+    border-left-color: #0066cc;
+}
+
+.file-manager-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+}
+
+.file-manager-toolbar {
+    padding: 8px 15px;
+    border-bottom: 1px solid #eee;
+    background: #fafafa;
+}
+
+.upload-file-btn {
+    background: #ffffff;
+    border: 1px solid #ccc;
+    padding: 5px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-block;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.upload-file-btn:hover {
+    background: #f5f5f5;
+}
+
+.file-list-grid {
+    flex: 1;
+    padding: 15px;
+    display: flex;
+    gap: 20px;
+    align-content: flex-start;
+    flex-wrap: wrap;
+    overflow-y: auto;
+}
+
+.file-item {
+    width: 75px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    cursor: default;
+}
+
+.file-icon {
+    font-size: 36px;
+}
+
+.file-name {
+    font-size: 12px;
+    color: #333;
+    word-break: break-all;
+    line-height: 14px;
+    max-height: 28px;
+    overflow: hidden;
+}
+
+/* Calculadora */
+.calc-layout {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 12px;
+    background: #fdfdfd;
+}
+
+#calc-screen {
+    width: 100%;
+    height: 50px;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    text-align: right;
+    padding: 0 12px;
+    font-size: 20px;
+    color: #333;
+    outline: none;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
+}
+
+.calc-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    flex: 1;
+}
+
+.calc-buttons-grid button {
+    height: 100%;
+    min-height: 45px;
+    border: 1px solid #e6e6e6;
+    background: #fcfcfc;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.1s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.calc-buttons-grid button:hover {
+    background: #f4f4f4;
+}
+
+.calc-buttons-grid button:active {
+    background: #eaeaea;
+}
+
+.calc-buttons-grid .btn-op {
+    background: #f5f5f5;
+    font-weight: bold;
+    color: #0066cc;
+}
+
+.calc-buttons-grid .btn-clear {
+    background: #ffebeb;
+    color: #d93838;
+    border-color: #ffd6d6;
+}
+
+.calc-buttons-grid .btn-equal {
+    background: #e1f5fe;
+    color: #0288d1;
+    border-color: #b3e5fc;
+    grid-row: span 2;
+    height: 100%;
+}
+
+/* Menu Iniciar */
+.start-menu-panel {
+    position: absolute;
+    bottom: 55px;
+    left: 10px;
+    width: 300px;
+    height: 400px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    box-shadow: 0px 10px 30px rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
+    z-index: 9999999;
+    overflow: hidden;
+}
+
+.start-menu-header {
+    background: #f3f3f3;
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+    font-size: 14px;
+    color: #333;
+}
+
+.start-menu-content {
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+}
+
+.start-menu-item {
+    padding: 10px 15px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+
+.start-menu-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.start-menu-footer {
+    background: #f3f3f3;
+    padding: 10px 15px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.restart-btn {
+    background: #e14d4d;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s;
+}
+
+.restart-btn:hover {
+    background: #c93b3b;
+}
+
+/* Barra de Tarefas */
+#taskbar {
+    height: 45px;
+    background: rgba(32, 32, 32, 0.85);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    gap: 15px;
+    position: relative;
+    z-index: 999999;
+}
+
+#start-menu-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#taskbar-apps {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+}
+
+.taskbar-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.taskbar-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.taskbar-button.active {
+    background: rgba(255, 255, 255, 0.3);
+    border-bottom: 2px solid #2196F3;
+}
+
+#taskbar-clock {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 11px;
+    font-family: sans-serif;
+    padding-left: 10px;
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+    cursor: default;
+}
+
+#clock-time {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+#clock-date {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 10px;
+}
