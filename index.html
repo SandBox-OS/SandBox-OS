@@ -11,7 +11,7 @@
     <!-- Área de Trabalho -->
     <div id="desktop" onclick="closeStartMenuOutside(event)">
         
-        <!-- Ícones Móveis da Área de Trabalho -->
+        <!-- Ícones da Área de Trabalho -->
         <div id="shortcut-notepad" class="shortcut draggable-shortcut">
             <span class="shortcut-icon">📝</span>
             <span>Bloco de Notas</span>
@@ -27,7 +27,6 @@
             <span>Calculadora</span>
         </div>
 
-        <!-- NOVO: Ícone do Explorador de Arquivos -->
         <div id="shortcut-files" class="shortcut draggable-shortcut">
             <span class="shortcut-icon">📁</span>
             <span>Meus Arquivos</span>
@@ -90,12 +89,9 @@
                         </label>
                     </div>
 
-                    <!-- NOVO: Seção do Histórico de Wallpapers colocados -->
                     <h3 style="margin-top: 20px;">Wallpapers Recentes</h3>
                     <p>Imagens enviadas por você recentemente:</p>
-                    <div id="wallpaper-history-grid" class="color-picker-grid">
-                        <!-- Gerado dinamicamente via JS -->
-                    </div>
+                    <div id="wallpaper-history-grid" class="color-picker-grid"></div>
                 </div>
             </div>
         </div>
@@ -142,7 +138,7 @@
             </div>
         </div>
 
-        <!-- NOVO: Janela do Explorador de Arquivos -->
+        <!-- Janela: Explorador de Arquivos -->
         <div id="win-files" class="window" style="display: none; top: 18%; left: 25%; width: 520px; height: 380px;">
             <div class="window-drag-border border-top"></div>
             <div class="window-drag-border border-bottom"></div>
@@ -159,27 +155,23 @@
                 </div>
             </div>
             <div class="window-content file-manager-layout">
-                <!-- Menu lateral de pastas estruturado -->
                 <div class="file-manager-sidebar">
                     <button id="folder-btn-downloads" class="active" onclick="switchFolder('downloads')">📥 Downloads</button>
                     <button id="folder-btn-imagens" onclick="switchFolder('imagens')">🖼️ Imagens</button>
                     <button id="folder-btn-videos" onclick="switchFolder('videos')">🎬 Vídeos</button>
                 </div>
-                <!-- Conteúdo interno dos arquivos da pasta -->
                 <div class="file-manager-body">
                     <div class="file-manager-toolbar">
                         <label for="file-upload-input" class="upload-file-btn">➕ Simular Arquivo
                             <input type="file" id="file-upload-input" onchange="handleFileUpload(event)" style="display: none;">
                         </label>
                     </div>
-                    <div id="file-list-container" class="file-list-grid">
-                        <!-- Arquivos listados dinamicamente via JS -->
-                    </div>
+                    <div id="file-list-container" class="file-list-grid"></div>
                 </div>
             </div>
         </div>
 
-        <!-- MENU INICIAR -->
+        <!-- Menu Iniciar -->
         <div id="start-menu" class="start-menu-panel" style="display: none;">
             <div class="start-menu-header">
                 <h4>SandBox-OS</h4>
@@ -187,3 +179,26 @@
             <div class="start-menu-content">
                 <div class="start-menu-item" onclick="openAppFromStart('notepad')">📝 Bloco de Notas</div>
                 <div class="start-menu-item" onclick="openAppFromStart('settings')">⚙️ Configurações</div>
+                <div class="start-menu-item" onclick="openAppFromStart('calc')">🧮 Calculadora</div>
+                <div class="start-menu-item" onclick="openAppFromStart('files')">📁 Meus Arquivos</div>
+            </div>
+            <div class="start-menu-footer">
+                <button class="restart-btn" onclick="clearSystemData()">🔄 Resetar OS</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Barra de Tarefas -->
+    <div id="taskbar">
+        <button id="start-menu-btn" onclick="toggleStartMenu(event)">🖥️ Iniciar</button>
+        <div id="taskbar-apps"></div>
+        <div id="taskbar-clock">
+            <span id="clock-time">00:00:00</span>
+            <span id="clock-date">01/01/2026</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
