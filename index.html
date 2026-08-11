@@ -1,3 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sandbox OS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body onclick="closeStartMenuOutside(event)">
+
+    <!-- Area de Trabalho -->
+    <div id="desktop">
+        <!-- Caixa de Seleção Múltipla -->
+        <div id="selection-box"></div>
+
+        <!-- Atalhos na Area de Trabalho -->
+        <div class="draggable-shortcut" id="shortcut-notepad" style="top: 20px; left: 20px;">
+            <div class="shortcut-icon">📝</div>
+            <div class="shortcut-label">Bloco de Notas</div>
+        </div>
+
+        <div class="draggable-shortcut" id="shortcut-files" style="top: 20px; left: 110px;">
+            <div class="shortcut-icon">📁</div>
+            <div class="shortcut-label">Meus Arquivos</div>
+        </div>
+
+        <div class="draggable-shortcut" id="shortcut-calc" style="top: 20px; left: 200px;">
+            <div class="shortcut-icon">🧮</div>
+            <div class="shortcut-label">Calculadora</div>
+        </div>
+
+        <div class="draggable-shortcut" id="shortcut-settings" style="top: 20px; left: 290px;">
+            <div class="shortcut-icon">⚙️</div>
+            <div class="shortcut-label">Configurações</div>
+        </div>
+
+        <!-- Pop-up de Calendário -->
+        <div id="calendar-popup" class="tray-popup">
+            <div class="calendar-header" id="calendar-month-year"></div>
+            <div class="calendar-grid" id="calendar-days"></div>
+        </div>
+
+        <!-- Pop-ups da Tray -->
+        <div id="tray-volume-popup" class="tray-popup">
+            <label for="volume-control">Volume do Sistema</label>
+            <input type="range" id="volume-control" min="0" max="100" value="80" oninput="updateVolumeLabel(this.value)">
+            <span id="volume-val">80%</span>
+        </div>
+
+        <div id="tray-network-popup" class="tray-popup">
+            <div><strong>Rede Conectada:</strong></div>
+            <div style="margin-top: 5px; color: #4caf50;">📶 Sandbox_Wi-Fi_5G</div>
+        </div>
+
+        <div id="tray-battery-popup" class="tray-popup">
+            <div><strong>Status da Bateria:</strong></div>
+            <div style="margin-top: 5px;">⚡ 85% (Carregando)</div>
+        </div>
+
+        <!-- JANELAS -->
+        <!-- Bloco de Notas -->
+        <div class="window" id="win-notepad" style="top: 80px; left: 100px; width: 450px; height: 320px;">
+            <div class="border-top"></div><div class="border-bottom"></div><div class="border-left"></div><div class="border-right"></div>
+            <div class="window-header" id="win-notepad-header">
+                <span class="window-title">📝 Bloco de Notas</span>
+                <div class="window-controls">
+                    <button class="win-btn min-btn" onclick="minimizeApp('notepad')">🗕</button>
+                    <button class="win-btn max-btn" onclick="maximizeApp('notepad')">🗖</button>
+                    <button class="win-btn close-btn" onclick="closeApp('notepad')">✕</button>
+                </div>
+            </div>
+            <div class="window-body">
+                <textarea id="notepad-textarea" oninput="saveNoteText()" placeholder="Digite suas anotações aqui..."></textarea>
+            </div>
+            <div class="window-resize-handle"></div>
+        </div>
+
+        <!-- Meus Arquivos -->
+        <div class="window" id="win-files" style="top: 100px; left: 150px; width: 550px; height: 350px;">
+            <div class="border-top"></div><div class="border-bottom"></div><div class="border-left"></div><div class="border-right"></div>
+            <div class="window-header" id="win-files-header">
+                <span class="window-title">📁 Meus Arquivos</span>
+                <div class="window-controls">
+                    <button class="win-btn min-btn" onclick="minimizeApp('files')">🗕</button>
+                    <button class="win-btn max-btn" onclick="maximizeApp('files')">🗖</button>
+                    <button class="win-btn close-btn" onclick="closeApp('files')">✕</button>
+                </div>
+            </div>
+            <div class="window-body file-manager-layout">
+                <div class="file-manager-sidebar">
+                    <button id="folder-btn-downloads" class="active" onclick="switchFolder('downloads')">📥 Downloads</button>
+                    <button id="folder-btn-imagens" onclick="switchFolder('imagens')">🖼️ Imagens</button>
+                    <button id="folder-btn-videos" onclick="switchFolder('videos')">🎬 Vídeos</button>
+                </div>
+                <div class="file-manager-content">
+                    <div class="file-toolbar">
+                        <label class="btn-upload">
+                            ➕ Enviar Arquivo
+                            <input type="file" id="file-upload-input" onchange="handleFileUpload(event)" style="display: none;">
+                        </label>
+                    </div>
+                    <div id="file-list-container" class="file-grid"></div>
+                </div>
+            </div>
+            <div class="window-resize-handle"></div>
+        </div>
+
+        <!-- Calculadora -->
+        <div class="window" id="win-calc" style="top: 120px; left: 220px; width: 300px; height: 380px;">
+            <div class="border-top"></div><div class="border-bottom"></div><div class="border-left"></div><div class="border-right"></div>
+            <div class="window-header" id="win-calc-header">
+                <span class="window-title">🧮 Calculadora</span>
+                <div class="window-controls">
+                    <button class="win-btn min-btn" onclick="minimizeApp('calc')">🗕</button>
+                    <button class="win-btn max-btn" onclick="maximizeApp('calc')">🗖</button>
+                    <button class="win-btn close-btn" onclick="closeApp('calc')">✕</button>
+                </div>
+            </div>
+            <div class="window-body">
+                <input type="text" id="calc-display" class="calc-display" value="0" readonly />
+                <div class="calc-buttons">
+                    <button class="clear" onclick="clearCalc()">C</button>
+                    <button class="operator" onclick="pressCalcOp('/')">/</button>
+                    <button class="operator" onclick="pressCalcOp('*')">*</button>
+                    <button class="operator" onclick="pressCalcOp('-')">-</button>
+
+                    <button onclick="pressCalcNum('7')">7</button>
+                    <button onclick="pressCalcNum('8')">8</button>
+                    <button onclick="pressCalcNum('9')">9</button>
+                    <button class="operator" onclick="pressCalcOp('+')">+</button>
+
+                    <button onclick="pressCalcNum('4')">4</button>
+                    <button onclick="pressCalcNum('5')">5</button>
+                    <button onclick="pressCalcNum('6')">6</button>
+                    <button class="operator" onclick="calculateResult()">=</button>
+
+                    <button onclick="pressCalcNum('1')">1</button>
+                    <button onclick="pressCalcNum('2')">2</button>
+                    <button onclick="pressCalcNum('3')">3</button>
+                    <button onclick="pressCalcNum('0')">0</button>
+                </div>
+            </div>
+            <div class="window-resize-handle"></div>
+        </div>
+
+        <!-- Configurações -->
+        <div class="window" id="win-settings" style="top: 140px; left: 260px; width: 480px; height: 360px;">
+            <div class="border-top"></div><div class="border-bottom"></div><div class="border-left"></div><div class="border-right"></div>
+            <div class="window-header" id="win-settings-header">
+                <span class="window-title">⚙️ Configurações</span>
+                <div class="window-controls">
+                    <button class="win-btn min-btn" onclick="minimizeApp('settings')">🗕</button>
+                    <button class="win-btn max-btn" onclick="maximizeApp('settings')">🗖</button>
+                    <button class="win-btn close-btn" onclick="closeApp('settings')">✕</button>
+                </div>
+            </div>
+            <div class="window-body" style="padding: 15px;">
+                <h3 style="margin-top:0;">Papéis de Parede (Pasta Imagens)</h3>
+                <div id="wallpaper-history-grid" class="wallpaper-grid"></div>
+                <hr style="margin: 15px 0; border: 0; border-top: 1px solid #444;">
+                <button onclick="clearSystemData()" style="background:#d9534f; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Restaurar Sistema</button>
+            </div>
+            <div class="window-resize-handle"></div>
+        </div>
+    </div>
+
+    <!-- Barra de Tarefas -->
+    <div id="taskbar">
+        <button id="start-btn" onclick="toggleStartMenu(event)">🌀 Iniciar</button>
+        
+        <div id="taskbar-apps"></div>
+
+        <div id="taskbar-tray">
+            <span class="tray-icon" title="Rede" onclick="toggleTrayPopup('tray-network-popup', event)">📶</span>
+            <span class="tray-icon" title="Volume" onclick="toggleTrayPopup('tray-volume-popup', event)">🔊</span>
+            <span class="tray-icon" title="Bateria" onclick="toggleTrayPopup('tray-battery-popup', event)">🔋</span>
+            <div id="clock-container" onclick="toggleCalendar(event)">
+                <div id="clock-time">00:00:00</div>
+                <div id="clock-date">01/01/2026</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Iniciar -->
+    <div id="start-menu" onclick="event.stopPropagation()">
+        <div class="start-header">
+            <input type="text" id="start-search" placeholder="🔍 Buscar aplicativos..." oninput="filterStartMenuApps(this.value)">
+        </div>
+        <div class="start-apps-list" id="start-apps-container">
+            <button class="start-app-item" data-name="bloco de notas" onclick="openAppFromStart('notepad')">📝 Bloco de Notas</button>
+            <button class="start-app-item" data-name="meus arquivos" onclick="openAppFromStart('files')">📁 Meus Arquivos</button>
+            <button class="start-app-item" data-name="calculadora" onclick="openAppFromStart('calc')">🧮 Calculadora</button>
+            <button class="start-app-item" data-name="configuracoes" onclick="openAppFromStart('settings')">⚙️ Configurações</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="apps/calculator.js"></script>
+</body>
+</html>
 <!-- Configurações -->
 <div class="window" id="win-settings" style="top: 140px; left: 260px; width: 500px; height: 400px;">
     <div class="border-top"></div><div class="border-bottom"></div><div class="border-left"></div><div class="border-right"></div>
