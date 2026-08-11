@@ -117,7 +117,28 @@
                 </div>
             </div>
             <div class="window-body">
-                <div style="padding: 10px; color: #ccc;">Calculadora Operacional.</div>
+                <input type="text" id="calc-display" class="calc-display" value="0" readonly />
+                <div class="calc-buttons">
+                    <button class="clear" onclick="clearCalc()">C</button>
+                    <button class="operator" onclick="pressCalcOp('/')">/</button>
+                    <button class="operator" onclick="pressCalcOp('*')">*</button>
+                    <button class="operator" onclick="pressCalcOp('-')">-</button>
+
+                    <button onclick="pressCalcNum('7')">7</button>
+                    <button onclick="pressCalcNum('8')">8</button>
+                    <button onclick="pressCalcNum('9')">9</button>
+                    <button class="operator" onclick="pressCalcOp('+')">+</button>
+
+                    <button onclick="pressCalcNum('4')">4</button>
+                    <button onclick="pressCalcNum('5')">5</button>
+                    <button onclick="pressCalcNum('6')">6</button>
+                    <button class="operator" onclick="calculateResult()">=</button>
+
+                    <button onclick="pressCalcNum('1')">1</button>
+                    <button onclick="pressCalcNum('2')">2</button>
+                    <button onclick="pressCalcNum('3')">3</button>
+                    <button onclick="pressCalcNum('0')">0</button>
+                </div>
             </div>
             <div class="window-resize-handle"></div>
         </div>
