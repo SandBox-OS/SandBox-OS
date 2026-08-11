@@ -3,306 +3,407 @@
     margin: 0;
     padding: 0;
     user-select: none;
-}
-
-body {
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #1e1e1e;
-    color: #fff;
 }
 
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Área de Trabalho (Desktop) */
 #desktop {
     width: 100vw;
     height: calc(100vh - 45px);
-    position: relative;
-    background: #2b2e38;
+    background: #1b1b1b;
     background-size: cover;
     background-position: center;
+    position: relative;
     overflow: hidden;
 }
 
-/* Atalhos da Área de Trabalho */
+/* Quadrado de Seleção Azul estilo Windows */
+#selection-box {
+    position: absolute;
+    border: 1px solid #0078d7;
+    background-color: rgba(0, 120, 215, 0.25);
+    display: none;
+    z-index: 5;
+    pointer-events: none;
+}
+
+/* Atalhos na Área de Trabalho */
 .draggable-shortcut {
     position: absolute;
     width: 80px;
+    height: 80px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px;
+    justify-content: center;
     border-radius: 6px;
     cursor: pointer;
-    transition: background 0.2s;
+    border: 1px solid transparent;
+    transition: background 0.15s;
 }
 
 .draggable-shortcut:hover {
-    background-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.draggable-shortcut.selected {
+    background: rgba(0, 120, 215, 0.3);
+    border: 1px solid rgba(0, 120, 215, 0.6);
 }
 
 .shortcut-icon {
     font-size: 32px;
 }
 
-.shortcut-label {
-    font-size: 12px;
+.shortcut-title {
+    color: white;
+    font-size: 11px;
     text-align: center;
     margin-top: 4px;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-    word-break: break-word;
+    text-shadow: 1px 1px 2px black;
 }
 
-/* Caixa de Seleção Múltipla */
-#selection-box {
+/* Barra de Tarefas (Taskbar) */
+#taskbar {
+    width: 100vw;
+    height: 45px;
+    background: rgba(20, 20, 20, 0.85);
+    backdrop-filter: blur(10px);
     position: absolute;
-    border: 1px solid #0078d4;
-    background-color: rgba(0, 120, 212, 0.3);
-    display: none;
-    pointer-events: none;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    z-index: 99999;
 }
 
-/* JANELAS DO SISTEMA */
-.window {
-    position: absolute;
-    background-color: #2b2b2b;
-    border: 1px solid #444;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    display: none;
-    flex-direction: column;
-    overflow: hidden;
-    min-width: 250px;
-    min-height: 200px;
-}
-
-.window-header {
-    background-color: #1f1f1f;
-    height: 35px;
+.taskbar-left, .taskbar-right {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0 10px;
-    cursor: move;
-    border-bottom: 1px solid #333;
+    gap: 8px;
 }
 
-.window-title {
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.window-controls {
-    display: flex;
-    gap: 5px;
-}
-
-.win-btn {
-    background: none;
+.taskbar-button-start {
+    background: transparent;
     border: none;
-    color: #ccc;
-    width: 26px;
-    height: 22px;
+    font-size: 20px;
+    color: white;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+.taskbar-button-start:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#taskbar-apps {
+    display: flex;
+    gap: 6px;
+}
+
+/* Botões da Barra de Tarefas com apenas Ícone estilo OS */
+.taskbar-button {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 6px 12px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 12px;
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 42px;
+    height: 38px;
 }
 
-.win-btn:hover {
-    background-color: #3a3a3a;
-    color: #fff;
+.taskbar-button .taskbar-icon {
+    font-size: 20px;
 }
 
-.win-btn.close-btn:hover {
-    background-color: #e81123;
-    color: #fff;
+.taskbar-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.taskbar-button.active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.taskbar-button.active::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    width: 16px;
+    height: 3px;
+    background-color: #0078d7;
+    border-radius: 2px;
+}
+
+/* Tray Clock e Popups */
+.tray-item {
+    color: white;
+    font-size: 12px;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.tray-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.tray-popup {
+    display: none;
+    position: absolute;
+    bottom: 50px;
+    right: 10px;
+    background: rgba(30, 30, 30, 0.95);
+    backdrop-filter: blur(15px);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 15px;
+    color: white;
+    z-index: 100000;
+}
+
+/* Calendar Day */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-top: 10px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.calendar-day {
+    padding: 5px;
+    border-radius: 4px;
+}
+
+.calendar-day.today {
+    background: #0078d7;
+    font-weight: bold;
+}
+
+/* Estrutura das Janelas (Windows) */
+.window {
+    position: absolute;
+    width: 500px;
+    height: 350px;
+    background: #202020;
+    border: 1px solid #3c3c3c;
+    border-radius: 8px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.window-header {
+    background: #2b2b2b;
+    height: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    color: white;
+    font-size: 12px;
+}
+
+.window-controls button {
+    background: transparent;
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.window-controls button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.window-controls button.close-btn:hover {
+    background: #e81123;
 }
 
 .window-body {
     flex: 1;
+    color: white;
     overflow: auto;
     position: relative;
-    background-color: #252526;
 }
 
-/* Bloco de Notas */
-#notepad-textarea {
+.window-resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    cursor: se-resize;
+}
+
+/* Menu Iniciar */
+#start-menu {
+    position: absolute;
+    bottom: 50px;
+    left: 10px;
+    width: 320px;
+    height: 420px;
+    background: rgba(25, 25, 25, 0.95);
+    backdrop-filter: blur(15px);
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    display: none;
+    flex-direction: column;
+    padding: 15px;
+    z-index: 99998;
+}
+
+.start-search {
     width: 100%;
-    height: 100%;
-    background-color: #1e1e1e;
-    color: #fff;
-    border: none;
-    padding: 10px;
-    resize: none;
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 14px;
-    outline: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background: #151515;
+    color: white;
+    margin-bottom: 12px;
 }
 
-/* ESTILOS DA CALCULADORA */
-.calc-display {
-    width: 100%;
-    height: 50px;
-    background-color: #1e1e1e;
-    color: #ffffff;
-    border: none;
-    font-size: 24px;
-    text-align: right;
-    padding: 10px 15px;
-    outline: none;
-    font-weight: bold;
-}
-
-.calc-buttons {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    padding: 10px;
-}
-
-.calc-buttons button {
-    height: 45px;
-    font-size: 18px;
-    background-color: #3c3c3c;
-    color: #ffffff;
-    border: none;
+.start-app-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    color: white;
     border-radius: 4px;
     cursor: pointer;
-    transition: background 0.2s;
 }
 
-.calc-buttons button:hover {
-    background-color: #505050;
+.start-app-item:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
-.calc-buttons button.operator {
-    background-color: #0078d4;
-    color: #ffffff;
+/* Snap Layouts */
+.snap-left {
+    top: 0 !important;
+    left: 0 !important;
+    width: 50vw !important;
+    height: calc(100vh - 45px) !important;
 }
 
-.calc-buttons button.operator:hover {
-    background-color: #106ebe;
+.snap-right {
+    top: 0 !important;
+    left: 50vw !important;
+    width: 50vw !important;
+    height: calc(100vh - 45px) !important;
 }
 
-.calc-buttons button.clear {
-    background-color: #d13438;
-    color: #ffffff;
-}
-
-.calc-buttons button.clear:hover {
-    background-color: #a80000;
-}
-
-/* GERENCIADOR DE ARQUIVOS */
-.file-manager-layout {
+/* Explorador de Arquivos */
+.file-manager {
     display: flex;
     height: 100%;
 }
 
 .file-manager-sidebar {
-    width: 140px;
-    background-color: #1f1f1f;
-    border-right: 1px solid #333;
-    padding: 10px 5px;
+    width: 130px;
+    background: #181818;
+    padding: 10px;
     display: flex;
     flex-direction: column;
     gap: 5px;
 }
 
 .file-manager-sidebar button {
-    background: none;
+    background: transparent;
     border: none;
     color: #ccc;
-    padding: 8px 10px;
     text-align: left;
+    padding: 6px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 13px;
 }
 
-.file-manager-sidebar button:hover {
-    background-color: #333;
-}
-
-.file-manager-sidebar button.active {
-    background-color: #0078d4;
-    color: #fff;
+.file-manager-sidebar button.active, .file-manager-sidebar button:hover {
+    background: #333;
+    color: white;
 }
 
 .file-manager-content {
     flex: 1;
     padding: 10px;
     display: flex;
-    flex-direction: column;
-}
-
-.file-toolbar {
-    margin-bottom: 10px;
-}
-
-.btn-upload {
-    background-color: #0078d4;
-    color: #fff;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    display: inline-block;
-}
-
-.file-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    flex-wrap: wrap;
     gap: 10px;
-    overflow-y: auto;
+    align-content: flex-start;
 }
 
-/* ESTILOS DAS CONFIGURAÇÕES E TELA */
-.settings-layout {
+.file-item {
+    width: 70px;
+    text-align: center;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+}
+
+.file-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.file-icon {
+    font-size: 28px;
+}
+
+.file-name {
+    font-size: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Configurações */
+.settings-container {
     display: flex;
     height: 100%;
-    background-color: #1e1e1e;
 }
 
 .settings-sidebar {
     width: 140px;
-    background-color: #252526;
-    border-right: 1px solid #333;
-    padding: 10px 5px;
+    background: #191919;
+    padding: 10px;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
 }
 
 .settings-tab-btn {
-    background: none;
+    background: transparent;
     border: none;
     color: #ccc;
-    padding: 8px 12px;
     text-align: left;
+    padding: 8px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 13px;
 }
 
-.settings-tab-btn:hover {
-    background-color: #333;
-    color: #fff;
-}
-
-.settings-tab-btn.active {
-    background-color: #0078d4;
-    color: #fff;
-    font-weight: bold;
+.settings-tab-btn.active, .settings-tab-btn:hover {
+    background: #333;
+    color: white;
 }
 
 .settings-content {
     flex: 1;
     padding: 15px;
-    overflow-y: auto;
 }
 
 .settings-tab-content {
@@ -313,160 +414,17 @@ body {
     display: block;
 }
 
-.settings-label {
-    font-size: 13px;
-    color: #ccc;
-    margin-bottom: 8px;
-}
-
-.color-palette {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 15px;
-}
-
-.color-btn {
-    width: 32px;
-    height: 32px;
+.color-ball {
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
+    cursor: pointer;
     border: 2px solid #555;
-    cursor: pointer;
-    transition: transform 0.2s, border-color 0.2s;
 }
 
-.color-btn:hover {
-    transform: scale(1.15);
-    border-color: #fff;
-}
-
-.settings-divider {
-    border: 0;
-    border-top: 1px solid #333;
-    margin: 15px 0;
-}
-
-.btn-primary {
-    background-color: #0078d4;
-    color: #fff;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
-}
-
-.btn-primary:hover {
-    background-color: #106ebe;
-}
-
-/* BARRA DE TAREFAS E MENU INICIAR */
-#taskbar {
-    position: absolute;
-    bottom: 0;
-    width: 100vw;
-    height: 45px;
-    background-color: #1f1f1f;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 10px;
-    border-top: 1px solid #333;
-    z-index: 9999;
-}
-
-#start-btn {
-    background-color: #0078d4;
-    color: #fff;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-#start-btn:hover {
-    background-color: #106ebe;
-}
-
-#taskbar-apps {
-    display: flex;
-    gap: 5px;
-    flex: 1;
-    margin: 0 15px;
-}
-
-#taskbar-tray {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 13px;
-}
-
-.tray-icon {
-    cursor: pointer;
-}
-
-#clock-container {
-    text-align: right;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-/* Menu Iniciar Popup */
-#start-menu {
-    position: absolute;
-    bottom: 50px;
-    left: 10px;
-    width: 280px;
-    background-color: #2b2b2b;
-    border: 1px solid #444;
-    border-radius: 8px;
-    padding: 10px;
-    display: none;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-    z-index: 10000;
-}
-
-.start-header input {
-    width: 100%;
-    padding: 8px;
-    background-color: #1e1e1e;
-    color: #fff;
-    border: 1px solid #444;
-    border-radius: 4px;
-    outline: none;
-    margin-bottom: 10px;
-}
-
-.start-apps-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.start-app-item {
-    background: none;
-    border: none;
-    color: #fff;
-    padding: 8px;
-    text-align: left;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
-}
-
-.start-app-item:hover {
-    background-color: #383838;
-}
-
-.tray-popup {
-    position: absolute;
-    bottom: 50px;
-    right: 10px;
-    background-color: #2b2b2b;
-    border: 1px solid #444;
-    border-radius: 6px;
-    padding: 10px;
-    display: none;
-    z-index: 10000;
+#wallpaper-history-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 10px;
 }
