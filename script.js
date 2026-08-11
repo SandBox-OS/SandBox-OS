@@ -46,12 +46,14 @@ function initializeOS() {
         win.addEventListener('mousedown', () => focusWindow(win));
     });
 
+    initDesktopSelection();
     updateClockEngine();
     setInterval(updateClockEngine, 1000);
 }
 
 document.addEventListener("DOMContentLoaded", initializeOS);
 
+// --- 🕒 RELÓGIO & CALENDÁRIO ---
 function updateClockEngine() {
     const timeEl = document.getElementById("clock-time");
     const dateEl = document.getElementById("clock-date");
@@ -68,17 +70,136 @@ function updateClockEngine() {
     dateEl.innerText = `${day}/${month}/${year}`;
 }
 
-// --- 🎨 WALLPAPERS INTEGRADOS AOS MEUS ARQUIVOS ---
+function toggleCalendar(event) {
+    event.stopPropagation();
+    closeAllPopups();
+    const popup = document.getElementById("calendar-popup");
+    if (!popup) return;
+    
+    if (popup.style.display === "block") {
+        popup.style.display = "none";
+    } else {
+        renderCalendar();
+        popup.style.display = "block";
+    }
+}
+
+function renderCalendar() {
+    const monthYearEl = document.getElementById("calendar-month-year");
+    const daysEl = document.getElementById("calendar-days");
+    if (!monthYearEl || !daysEl) return;
+
+    const now = new Date();
+    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    monthYearEl.innerText = `${months[now.getMonth()]} ${now.getFullYear()}`;
+
+    daysEl.innerHTML = "";
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+    const totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+    for (let i = 0; i < firstDay; i++) {
+        daysEl.appendChild(document.createElement("div"));
+    }
+
+    for (let day = 1; day <= totalDays; day++) {
+        const dayEl = document.createElement("div");
+        dayEl.className = "calendar-day";
+        if (day === now.getDate()) dayEl.classList.add("today");
+        dayEl.innerText = day;
+        daysEl.appendChild(dayEl);
+    }
+}
+
+// --- 🔔 ÁREA DE NOTIFICAÇÃO (TRAY) ---
+function toggleTrayPopup(popupId, event) {
+    event.stopPropagation();
+    const targetPopup = document.getElementById(popupId);
+    const isOpen = targetPopup.style.display === "block";
+    closeAllPopups();
+    if (!isOpen) targetPopup.style.display = "block";
+}
+
+function updateVolumeLabel(val) {
+    document.getElementById("volume-val").innerText = val + "%";
+}
+
+function closeAllPopups() {
+    document.querySelectorAll('.tray-popup').forEach(p => p.style.display = 'none');
+}
+
+// --- 🔍 MENU INICIAR COM BUSCA ---
+function filterStartMenuApps(query) {
+    const filter = query.toLowerCase();
+    document.querySelectorAll('.start-app-item').forEach(item => {
+        const appName = item.getAttribute('data-name');
+        item.style.display = appName.includes(filter) ? 'block' : 'none';
+    });
+}
+
+// --- 🖱️ SELEÇÃO MÚLTIPLA NO DESKTOP ---
+function initDesktopSelection() {
+    const desktop = document.getElementById('desktop');
+    const box = document.getElementById('selection-box');
+    let startX = 0, startY = 0, isSelecting = false;
+
+    desktop.addEventListener('mousedown', (e) => {
+        if (e.target !== desktop) return;
+        isSelecting = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        box.style.left = startX + 'px';
+        box.style.top = startY + 'px';
+        box.style.width = '0px';
+        box.style.height = '0px';
+        box.style.display = 'block';
+
+        document.querySelectorAll('.draggable-shortcut').forEach(s => s.classList.remove('selected'));
+    });
+
+    desktop.addEventListener('mousemove', (e) => {
+        if (!isSelecting) return;
+        let currentX = e.clientX;
+        let currentY = e.clientY;
+
+        let left = Math.min(startX, currentX);
+        let top = Math.min(startY, currentY);
+        let width = Math.abs(currentX - startX);
+        let height = Math.abs(currentY - startY);
+
+        box.style.left = left + 'px';
+        box.style.top = top + 'px';
+        box.style.width = width + 'px';
+        box.style.height = height + 'px';
+
+        const boxRect = box.getBoundingClientRect();
+        document.querySelectorAll('.draggable-shortcut').forEach(shortcut => {
+            const rect = shortcut.getBoundingClientRect();
+            if (!(rect.right < boxRect.left || rect.left > boxRect.right || rect.bottom < boxRect.top || rect.top > boxRect.bottom)) {
+                shortcut.classList.add('selected');
+            } else {
+                shortcut.classList.remove('selected');
+            }
+        });
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isSelecting) {
+            isSelecting = false;
+            box.style.display = 'none';
+        }
+    });
+}
+
+// --- 🎨 WALLPAPERS ---
 function renderWallpaperHistory() {
     const container = document.getElementById("wallpaper-history-grid");
     if (!container) return;
     container.innerHTML = "";
 
-    // Busca imagens armazenadas na pasta 'imagens' do Meus Arquivos
     const imagesInFolder = virtualFileSystem.imagens || [];
 
     if (imagesInFolder.length === 0) {
-        container.innerHTML = "<p style='color:#999; font-size:12px; grid-column: 1 / -1;'>Nenhuma imagem encontrada na pasta 'Imagens'. Adicione imagens através do app Meus Arquivos.</p>";
+        container.innerHTML = "<p style='color:#999; font-size:12px; grid-column: 1 / -1;'>Nenhuma imagem na pasta 'Imagens'.</p>";
         return;
     }
 
@@ -189,12 +310,12 @@ function handleFileUpload(event) {
         const newFile = { 
             name: file.name, 
             type: file.type,
-            data: e.target.result // Armazena a imagem base64 para uso no wallpaper
+            data: e.target.result
         };
         virtualFileSystem[currentFolder].push(newFile);
         localStorage.setItem("sandboxos_files", JSON.stringify(virtualFileSystem));
         renderFiles();
-        renderWallpaperHistory(); // Atualiza a lista de papéis de parede caso esteja na pasta 'imagens'
+        renderWallpaperHistory();
     };
     reader.readAsDataURL(file);
 }
@@ -233,7 +354,7 @@ function saveNoteText() {
     if (textarea) localStorage.setItem("sandboxos_note_text", textarea.value);
 }
 
-// --- 🪟 JANELAS ---
+// --- 🪟 JANELAS & SNAP ---
 function openApp(appId) {
     const win = document.getElementById("win-" + appId);
     if (win) {
@@ -253,17 +374,16 @@ function makeDraggableAndResizable(elmnt) {
     const header = document.getElementById(elmnt.id + "-header");
     if (header) header.onmousedown = dragMouseDown;
 
-    ['top', 'bottom', 'left', 'right'].forEach(dir => {
-        const border = elmnt.querySelector(`.border-${dir}`);
-        if (border) border.onmousedown = dragMouseDown;
-    });
-
     function dragMouseDown(e) {
         const appId = elmnt.id.replace('win-', '');
         if (openAppsList[appId] && openAppsList[appId].maximized) return;
         e = e || window.event;
         if (['BUTTON', 'INPUT', 'LABEL', 'TEXTAREA'].includes(e.target.tagName)) return; 
         e.preventDefault();
+        
+        // Remove SNAP ao arrastar
+        elmnt.classList.remove('snap-left', 'snap-right');
+
         pos3 = e.clientX; 
         pos4 = e.clientY;
         document.onmouseup = closeDragElement;
@@ -280,20 +400,21 @@ function makeDraggableAndResizable(elmnt) {
 
         let newTop = elmnt.offsetTop - pos2; 
         let newLeft = elmnt.offsetLeft - pos1;
-        const rect = elmnt.getBoundingClientRect();
-
-        if (newTop < 0) newTop = 0; 
-        if (newLeft < 0) newLeft = 0;
-        if (newLeft + rect.width > window.innerWidth) newLeft = window.innerWidth - rect.width;
-        if (newTop + rect.height > window.innerHeight - 45) newTop = window.innerHeight - 45 - rect.height;
 
         elmnt.style.top = newTop + "px"; 
         elmnt.style.left = newLeft + "px";
     }
 
-    function closeDragElement() { 
+    function closeDragElement(e) { 
         document.onmouseup = null; 
         document.onmousemove = null; 
+
+        // Lógica de SNAP ao soltar na borda
+        if (e.clientX <= 10) {
+            elmnt.classList.add('snap-left');
+        } else if (e.clientX >= window.innerWidth - 10) {
+            elmnt.classList.add('snap-right');
+        }
     }
 
     const resizeHandle = elmnt.querySelector('.window-resize-handle');
@@ -323,6 +444,7 @@ function closeApp(appId) {
     const win = document.getElementById("win-" + appId);
     if (win) {
         win.style.display = 'none';
+        win.classList.remove('snap-left', 'snap-right');
         delete openAppsList[appId]; 
         updateTaskbar();
     }
@@ -348,6 +470,9 @@ function minimizeApp(appId) {
 function maximizeApp(appId) {
     const win = document.getElementById("win-" + appId);
     if (!win) return;
+
+    win.classList.remove('snap-left', 'snap-right');
+
     if (!openAppsList[appId].maximized) {
         openAppsList[appId].prevStyle = {
             top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height
@@ -397,6 +522,7 @@ function updateTaskbar() {
 
 function toggleStartMenu(event) {
     event.stopPropagation();
+    closeAllPopups();
     const menu = document.getElementById("start-menu");
     if (menu) menu.style.display = (menu.style.display === "none" || !menu.style.display) ? "flex" : "none";
 }
@@ -409,6 +535,7 @@ function openAppFromStart(appId) {
 function closeStartMenuOutside(event) {
     const menu = document.getElementById("start-menu");
     if (menu && menu.style.display === "flex") menu.style.display = "none";
+    closeAllPopups();
 }
 
 function clearSystemData() {
@@ -426,10 +553,7 @@ function changeBackground(colorOrType) {
 function applyBackgroundLogic(colorOrType) {
     const desktop = document.getElementById('desktop');
     if (!desktop) return;
-    if (colorOrType === 'image') {
-        desktop.style.background = "url('https://picsum.photos/1920/1080') no-repeat center center";
-        desktop.style.backgroundSize = "cover";
-    } else if (colorOrType.startsWith("url(")) {
+    if (colorOrType.startsWith("url(")) {
         desktop.style.background = colorOrType + " no-repeat center center";
         desktop.style.backgroundSize = "cover";
     } else {
