@@ -226,42 +226,6 @@ function renderFiles() {
     });
 }
 
-// --- 🧮 CALCULADORA ---
-function pressCalcNum(num) {
-    const screen = document.getElementById("calc-screen");
-    if (screen) {
-        if (screen.value === "0" || screen.value === "Erro") screen.value = "";
-        screen.value += num;
-    }
-}
-
-function pressCalcOp(op) {
-    const screen = document.getElementById("calc-screen");
-    if (!screen || screen.value === "Erro") return;
-    let currentVal = screen.value;
-    if (currentVal === "") return;
-    const lastChar = currentVal.slice(-1);
-    if (['+', '-', '*', '/'].includes(lastChar)) return; 
-    screen.value += op; 
-}
-
-function clearCalc() {
-    const screen = document.getElementById("calc-screen");
-    if (screen) screen.value = "";
-}
-
-function calculateResult() {
-    const screen = document.getElementById("calc-screen");
-    if (!screen || screen.value === "") return;
-    try {
-        const sanitizedExpression = screen.value.replace(/[^0-9+\-*/.]/g, '');
-        const result = Function(`'use strict'; return (${sanitizedExpression})`)();
-        screen.value = Number.isFinite(result) ? result : "Erro";
-    } catch (err) {
-        screen.value = "Erro";
-    }
-}
-
 function saveNoteText() {
     const textarea = document.getElementById("notepad-textarea");
     if (textarea) localStorage.setItem("sandboxos_note_text", textarea.value);
