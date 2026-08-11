@@ -1,490 +1,113 @@
-* {
-    box-sizing: border-box;
-    user-select: none;
-}
-
-body, html {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #1e1e1e;
-    color: #fff;
-}
-
-#desktop {
-    width: 100vw;
-    height: calc(100vh - 45px);
-    position: relative;
-    background: #2b2e38;
-    overflow: hidden;
-}
-
-/* Caixa de Seleção Arrastável */
-#selection-box {
-    position: absolute;
-    border: 1px solid rgba(0, 120, 215, 0.8);
-    background-color: rgba(0, 120, 215, 0.25);
-    display: none;
-    z-index: 5;
-    pointer-events: none;
-}
-
-/* Atalhos */
-.draggable-shortcut {
-    position: absolute;
-    width: 80px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 8px;
-    border-radius: 6px;
-    cursor: pointer;
-    z-index: 6;
-}
-
-.draggable-shortcut:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-}
-
-.draggable-shortcut.selected {
-    background-color: rgba(0, 120, 215, 0.4);
-    border: 1px solid rgba(0, 120, 215, 0.8);
-}
-
-.shortcut-icon {
-    font-size: 36px;
-}
-
-.shortcut-label {
-    font-size: 12px;
-    text-align: center;
-    margin-top: 4px;
-    text-shadow: 1px 1px 2px #000;
-}
-
-/* Janelas */
-.window {
-    position: absolute;
-    background: #252526;
-    border: 1px solid #3c3c3c;
-    border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    display: none;
-    flex-direction: column;
-    overflow: hidden;
-    min-width: 250px;
-    min-height: 150px;
-}
-
-.window.snap-left {
-    top: 0 !important;
-    left: 0 !important;
-    width: 50vw !important;
-    height: calc(100vh - 45px) !important;
-    border-radius: 0;
-}
-
-.window.snap-right {
-    top: 0 !important;
-    left: 50vw !important;
-    width: 50vw !important;
-    height: calc(100vh - 45px) !important;
-    border-radius: 0;
-}
-
-.window-header {
-    background: #323233;
-    padding: 8px 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: move;
-}
-
-.window-title {
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.window-controls {
-    display: flex;
-    gap: 5px;
-}
-
-.win-btn {
-    background: transparent;
-    border: none;
-    color: #ccc;
-    cursor: pointer;
-    width: 24px;
-    height: 24px;
-    border-radius: 3px;
-}
-
-.win-btn:hover { background: rgba(255,255,255,0.1); }
-.close-btn:hover { background: #e81123; color: #fff; }
-
-.window-body {
-    flex: 1;
-    overflow: auto;
-    position: relative;
-}
-
-#notepad-textarea {
-    width: 100%;
-    height: 100%;
-    background: #1e1e1e;
-    color: #fff;
-    border: none;
-    padding: 10px;
-    resize: none;
-    font-family: monospace;
-    outline: none;
-}
-
-.window-resize-handle {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 12px;
-    height: 12px;
-    cursor: se-resize;
-}
-
-/* Explorador de Arquivos */
-.file-manager-layout {
-    display: flex;
-    height: 100%;
-}
-
-.file-manager-sidebar {
-    width: 130px;
-    background: #2d2d2d;
-    border-right: 1px solid #3c3c3c;
-    display: flex;
-    flex-direction: column;
-    padding: 5px;
-    gap: 4px;
-}
-
-.file-manager-sidebar button {
-    background: transparent;
-    border: none;
-    color: #ccc;
-    padding: 8px;
-    text-align: left;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.file-manager-sidebar button.active, .file-manager-sidebar button:hover {
-    background: #37373d;
-    color: #fff;
-}
-
-.file-manager-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-}
-
-.file-toolbar {
-    margin-bottom: 10px;
-}
-
-.btn-upload {
-    background: #0e639c;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-.file-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 10px;
-}
-
-.file-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 8px;
-    border-radius: 4px;
-    background: #2d2d2d;
-}
-
-.file-icon { font-size: 28px; }
-.file-name { font-size: 11px; margin-top: 4px; text-align: center; word-break: break-word; }
-
-/* Wallpapers */
-.wallpaper-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.color-ball {
-    width: 60px;
-    height: 60px;
-    border-radius: 6px;
-    cursor: pointer;
-    border: 2px solid #555;
-}
-
-/* Barra de Tarefas */
-#taskbar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100vw;
-    height: 45px;
-    background: #181818;
-    border-top: 1px solid #2b2b2b;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 8px;
-    z-index: 9999;
-}
-
-#start-btn {
-    background: #0078d4;
-    border: none;
-    color: #fff;
-    padding: 6px 14px;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-#taskbar-apps {
-    display: flex;
-    gap: 5px;
-    flex: 1;
-    margin-left: 10px;
-}
-
-.taskbar-button {
-    background: #2d2d2d;
-    border: 1px solid #3c3c3c;
-    color: #fff;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-.taskbar-button.active {
-    background: #37373d;
-    border-bottom: 2px solid #0078d4;
-}
-
-/* Tray & Clock */
-#taskbar-tray {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.tray-icon {
-    cursor: pointer;
-    font-size: 14px;
-    padding: 4px;
-    border-radius: 3px;
-}
-
-.tray-icon:hover, #clock-container:hover {
-    background: rgba(255,255,255,0.1);
-}
-
-#clock-container {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
-#clock-time { font-size: 12px; font-weight: bold; }
-#clock-date { font-size: 10px; color: #aaa; }
-
-/* Pop-ups */
-.tray-popup {
-    position: fixed;
-    bottom: 50px;
-    right: 10px;
-    background: #252526;
-    border: 1px solid #3c3c3c;
-    padding: 12px;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    display: none;
-    z-index: 10000;
-}
-
-/* Calendário */
-#calendar-popup {
-    width: 220px;
-}
-
-.calendar-header {
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 8px;
-    font-size: 13px;
-}
-
-.calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    text-align: center;
-    font-size: 11px;
-}
-
-.calendar-day {
-    padding: 4px;
-    border-radius: 3px;
-}
-
-.calendar-day.today {
-    background: #0078d4;
-    color: #fff;
-    font-weight: bold;
-}
-
-/* Menu Iniciar */
-#start-menu {
-    position: fixed;
-    bottom: 50px;
-    left: 10px;
-    width: 280px;
-    background: #252526;
-    border: 1px solid #3c3c3c;
-    border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    display: none;
-    flex-direction: column;
-    z-index: 10000;
-    overflow: hidden;
-}
-
-.start-header {
-    padding: 10px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3c3c3c;
-}
-
-#start-search {
-    width: 100%;
-    padding: 6px 10px;
-    background: #1e1e1e;
-    border: 1px solid #3c3c3c;
-    color: #fff;
-    border-radius: 4px;
-    outline: none;
-}
-
-.start-apps-list {
-    display: flex;
-    flex-direction: column;
-    padding: 5px;
-}
-
-.start-app-item {
-    background: transparent;
-    border: none;
-    color: #fff;
-    padding: 10px;
-    text-align: left;
-    cursor: pointer;
-    border-radius: 4px;
-}
-
-.start-app-item:hover {
-    background: #0078d4;
-}
 /* ==========================================
-   ESTILOS DA CALCULADORA
+   ESTILOS DAS CONFIGURAÇÕES E TELA
    ========================================== */
 
-/* Janela da Calculadora */
-#window-calculator {
-  width: 280px;
-  background-color: #2b2b2b;
-  border: 1px solid #444;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+.settings-layout {
+  display: flex;
+  height: 100%;
+  background-color: #1e1e1e;
+  color: #fff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Visor / Display */
-.calc-display {
-  width: 100%;
-  height: 50px;
-  background-color: #1e1e1e;
-  color: #ffffff;
-  border: none;
-  font-size: 24px;
-  text-align: right;
-  padding: 10px 15px;
-  box-sizing: border-box;
-  outline: none;
-  font-weight: bold;
+.settings-sidebar {
+  width: 140px;
+  background-color: #252526;
+  border-right: 1px solid #333;
+  padding: 10px 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
-/* Grade de Botões */
-.calc-buttons {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  padding: 10px;
-}
-
-/* Botões Padrão */
-.calc-buttons button {
-  height: 45px;
-  font-size: 18px;
-  background-color: #3c3c3c;
-  color: #ffffff;
+.settings-tab-btn {
+  background: none;
   border: none;
+  color: #ccc;
+  padding: 8px 12px;
+  text-align: left;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 13px;
   transition: background 0.2s;
 }
 
-.calc-buttons button:hover {
-  background-color: #505050;
+.settings-tab-btn:hover {
+  background-color: #333;
+  color: #fff;
 }
 
-.calc-buttons button:active {
-  background-color: #666666;
-}
-
-/* Botões de Operação (+, -, *, /, =) */
-.calc-buttons button.operator {
+.settings-tab-btn.active {
   background-color: #0078d4;
-  color: #ffffff;
+  color: #fff;
+  font-weight: bold;
 }
 
-.calc-buttons button.operator:hover {
+.settings-content {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.settings-tab-content {
+  display: none;
+}
+
+.settings-tab-content.active {
+  display: block;
+}
+
+.settings-tab-content h4 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 16px;
+  color: #fff;
+}
+
+.settings-label {
+  font-size: 13px;
+  color: #ccc;
+  margin-bottom: 8px;
+}
+
+/* Paleta de Cores */
+.color-palette {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.color-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #555;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.color-btn:hover {
+  transform: scale(1.15);
+  border-color: #fff;
+}
+
+.settings-divider {
+  border: 0;
+  border-top: 1px solid #333;
+  margin: 15px 0;
+}
+
+.btn-primary {
+  background-color: #0078d4;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
   background-color: #106ebe;
-}
-
-/* Botão Limpar (C) */
-.calc-buttons button.clear {
-  background-color: #d13438;
-  color: #ffffff;
-}
-
-.calc-buttons button.clear:hover {
-  background-color: #a80000;
 }
