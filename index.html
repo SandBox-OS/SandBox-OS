@@ -1,1 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SandBox-OS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+    <!-- Área de Trabalho -->
+    <div id="desktop" onclick="closeStartMenuOutside(event)">
+        
+        <!-- Ícones Móveis da Área de Trabalho -->
+        <div id="shortcut-notepad" class="shortcut draggable-shortcut">
+            <span class="shortcut-icon">📝</span>
+            <span>Bloco de Notas</span>
+        </div>
+
+        <div id="shortcut-settings" class="shortcut draggable-shortcut">
+            <span class="shortcut-icon">⚙️</span>
+            <span>Configurações</span>
+        </div>
+
+        <div id="shortcut-calc" class="shortcut draggable-shortcut">
+            <span class="shortcut-icon">🧮</span>
+            <span>Calculadora</span>
+        </div>
+
+        <!-- NOVO: Ícone do Explorador de Arquivos -->
+        <div id="shortcut-files" class="shortcut draggable-shortcut">
+            <span class="shortcut-icon">📁</span>
+            <span>Meus Arquivos</span>
+        </div>
+        
+        <!-- Janela: Bloco de Notas -->
+        <div id="win-notepad" class="window" style="display: none; top: 15%; left: 20%; width: 400px; height: 300px;">
+            <div class="window-drag-border border-top"></div>
+            <div class="window-drag-border border-bottom"></div>
+            <div class="window-drag-border border-left"></div>
+            <div class="window-drag-border border-right"></div>
+            <div class="window-resize-handle"></div>
+            
+            <div class="window-header" id="win-notepad-header">
+                <span class="window-title">Bloco de Notas</span>
+                <div class="window-controls">
+                    <button onclick="minimizeApp('notepad')">🗕</button>
+                    <button onclick="maximizeApp('notepad')">🗖</button>
+                    <button class="close-btn" onclick="closeApp('notepad')">✕</button>
+                </div>
+            </div>
+            <div class="window-content">
+                <textarea id="notepad-textarea" oninput="saveNoteText()" placeholder="Digite suas anotações aqui..."></textarea>
+            </div>
+        </div>
+
+        <!-- Janela: Configurações -->
+        <div id="win-settings" class="window" style="display: none; top: 20%; left: 30%; width: 480px; height: 380px;">
+            <div class="window-drag-border border-top"></div>
+            <div class="window-drag-border border-bottom"></div>
+            <div class="window-drag-border border-left"></div>
+            <div class="window-drag-border border-right"></div>
+            <div class="window-resize-handle"></div>
+
+            <div class="window-header" id="win-settings-header">
+                <span class="window-title">Configurações</span>
+                <div class="window-controls">
+                    <button onclick="minimizeApp('settings')">🗕</button>
+                    <button onclick="maximizeApp('settings')">🗖</button>
+                    <button class="close-btn" onclick="closeApp('settings')">✕</button>
+                </div>
+            </div>
+            <div class="window-content settings-layout">
+                <div class="settings-sidebar">
+                    <button class="active">🖼️ Fundo</button>
+                </div>
+                <div class="settings-body" style="overflow-y: auto;">
+                    <h3>Cor de Fundo</h3>
+                    <p>Escolha uma cor ou envie uma imagem do seu PC:</p>
+                    <div class="color-picker-grid">
+                        <div class="color-ball color-blue" onclick="changeBackground('#2a4d69')"></div>
+                        <div class="color-ball color-purple" onclick="changeBackground('#4b357a')"></div>
+                        <div class="color-ball color-dark" onclick="changeBackground('#1e1e1e')"></div>
+                        <div class="color-ball color-green" onclick="changeBackground('#1e4620')"></div>
+                        <div class="color-ball color-sunset" onclick="changeBackground('#b85d32')"></div>
+                        <div class="color-ball color-default" onclick="changeBackground('image')"></div>
+                        
+                        <label for="wallpaper-upload" class="color-ball color-upload">➕
+                            <input type="file" id="wallpaper-upload" accept="image/*" onchange="uploadWallpaper(event)" style="display: none;">
+                        </label>
+                    </div>
+
+                    <!-- NOVO: Seção do Histórico de Wallpapers colocados -->
+                    <h3 style="margin-top: 20px;">Wallpapers Recentes</h3>
+                    <p>Imagens enviadas por você recentemente:</p>
+                    <div id="wallpaper-history-grid" class="color-picker-grid">
+                        <!-- Gerado dinamicamente via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Janela: Calculadora -->
+        <div id="win-calc" class="window" style="display: none; top: 25%; left: 40%; width: 280px; height: 380px;">
+            <div class="window-drag-border border-top"></div>
+            <div class="window-drag-border border-bottom"></div>
+            <div class="window-drag-border border-left"></div>
+            <div class="window-drag-border border-right"></div>
+            <div class="window-resize-handle"></div>
+
+            <div class="window-header" id="win-calc-header">
+                <span class="window-title">Calculadora</span>
+                <div class="window-controls">
+                    <button onclick="minimizeApp('calc')">🗕</button>
+                    <button onclick="maximizeApp('calc')">🗖</button>
+                    <button class="close-btn" onclick="closeApp('calc')">✕</button>
+                </div>
+            </div>
+            <div class="window-content calc-layout">
+                <input type="text" id="calc-screen" readonly placeholder="0">
+                <div class="calc-buttons-grid">
+                    <button class="btn-clear" onclick="clearCalc()">C</button>
+                    <button class="btn-op" onclick="pressCalcOp('/')">/</button>
+                    <button class="btn-op" onclick="pressCalcOp('*')">*</button>
+                    <button class="btn-op" onclick="pressCalcOp('-')">-</button>
+                    
+                    <button onclick="pressCalcNum('7')">7</button>
+                    <button onclick="pressCalcNum('8')">8</button>
+                    <button onclick="pressCalcNum('9')">9</button>
+                    <button class="btn-op" onclick="pressCalcOp('+')">+</button>
+                    
+                    <button onclick="pressCalcNum('4')">4</button>
+                    <button onclick="pressCalcNum('5')">5</button>
+                    <button onclick="pressCalcNum('6')">6</button>
+                    <button class="btn-equal" onclick="calculateResult()">=</button>
+                    
+                    <button onclick="pressCalcNum('1')">1</button>
+                    <button onclick="pressCalcNum('2')">2</button>
+                    <button onclick="pressCalcNum('3')">3</button>
+                    <button onclick="pressCalcNum('0')">0</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOVO: Janela do Explorador de Arquivos -->
+        <div id="win-files" class="window" style="display: none; top: 18%; left: 25%; width: 520px; height: 380px;">
+            <div class="window-drag-border border-top"></div>
+            <div class="window-drag-border border-bottom"></div>
+            <div class="window-drag-border border-left"></div>
+            <div class="window-drag-border border-right"></div>
+            <div class="window-resize-handle"></div>
+
+            <div class="window-header" id="win-files-header">
+                <span class="window-title">Meus Arquivos</span>
+                <div class="window-controls">
+                    <button onclick="minimizeApp('files')">🗕</button>
+                    <button onclick="maximizeApp('files')">🗖</button>
+                    <button class="close-btn" onclick="closeApp('files')">✕</button>
+                </div>
+            </div>
+            <div class="window-content file-manager-layout">
+                <!-- Menu lateral de pastas estruturado -->
+                <div class="file-manager-sidebar">
+                    <button id="folder-btn-downloads" class="active" onclick="switchFolder('downloads')">📥 Downloads</button>
+                    <button id="folder-btn-imagens" onclick="switchFolder('imagens')">🖼️ Imagens</button>
+                    <button id="folder-btn-videos" onclick="switchFolder('videos')">🎬 Vídeos</button>
+                </div>
+                <!-- Conteúdo interno dos arquivos da pasta -->
+                <div class="file-manager-body">
+                    <div class="file-manager-toolbar">
+                        <label for="file-upload-input" class="upload-file-btn">➕ Simular Arquivo
+                            <input type="file" id="file-upload-input" onchange="handleFileUpload(event)" style="display: none;">
+                        </label>
+                    </div>
+                    <div id="file-list-container" class="file-list-grid">
+                        <!-- Arquivos listados dinamicamente via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MENU INICIAR -->
+        <div id="start-menu" class="start-menu-panel" style="display: none;">
+            <div class="start-menu-header">
+                <h4>SandBox-OS</h4>
+            </div>
+            <div class="start-menu-content">
+                <div class="start-menu-item" onclick="openAppFromStart('notepad')">📝 Bloco de Notas</div>
+                <div class="start-menu-item" onclick="openAppFromStart('settings')">⚙️ Configurações</div>
