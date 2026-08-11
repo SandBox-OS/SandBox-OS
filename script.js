@@ -68,38 +68,31 @@ function updateClockEngine() {
     dateEl.innerText = `${day}/${month}/${year}`;
 }
 
-// --- 🎨 WALLPAPERS ---
-function uploadWallpaper(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const base64Image = "url('" + e.target.result + "')";
-        changeBackground(base64Image);
-
-        let history = JSON.parse(localStorage.getItem("sandboxos_bg_history")) || [];
-        if (!history.includes(base64Image)) {
-            history.unshift(base64Image);
-            if (history.length > 4) history.pop();
-            localStorage.setItem("sandboxos_bg_history", JSON.stringify(history));
-            renderWallpaperHistory();
-        }
-    };
-    reader.readAsDataURL(file);
-}
-
+// --- 🎨 WALLPAPERS INTEGRADOS AOS MEUS ARQUIVOS ---
 function renderWallpaperHistory() {
     const container = document.getElementById("wallpaper-history-grid");
     if (!container) return;
     container.innerHTML = "";
-    let history = JSON.parse(localStorage.getItem("sandboxos_bg_history")) || [];
-    
-    history.forEach(function(bgData) {
-        const ball = document.createElement("div");
-        ball.className = "color-ball";
-        ball.style.background = bgData;
-        ball.onclick = function() { changeBackground(bgData); };
-        container.appendChild(ball);
+
+    // Busca imagens armazenadas na pasta 'imagens' do Meus Arquivos
+    const imagesInFolder = virtualFileSystem.imagens || [];
+
+    if (imagesInFolder.length === 0) {
+        container.innerHTML = "<p style='color:#999; font-size:12px; grid-column: 1 / -1;'>Nenhuma imagem encontrada na pasta 'Imagens'. Adicione imagens através do app Meus Arquivos.</p>";
+        return;
+    }
+
+    imagesInFolder.forEach(function(file) {
+        if (file.type && file.type.startsWith("image/") && file.data) {
+            const bgData = "url('" + file.data + "')";
+            const ball = document.createElement("div");
+            ball.className = "color-ball";
+            ball.style.background = bgData;
+            ball.style.backgroundSize = "cover";
+            ball.title = file.name;
+            ball.onclick = function() { changeBackground(bgData); };
+            container.appendChild(ball);
+        }
     });
 }
 
@@ -191,10 +184,19 @@ function handleFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    const newFile = { name: file.name, type: file.type };
-    virtualFileSystem[currentFolder].push(newFile);
-    localStorage.setItem("sandboxos_files", JSON.stringify(virtualFileSystem));
-    renderFiles();
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const newFile = { 
+            name: file.name, 
+            type: file.type,
+            data: e.target.result // Armazena a imagem base64 para uso no wallpaper
+        };
+        virtualFileSystem[currentFolder].push(newFile);
+        localStorage.setItem("sandboxos_files", JSON.stringify(virtualFileSystem));
+        renderFiles();
+        renderWallpaperHistory(); // Atualiza a lista de papéis de parede caso esteja na pasta 'imagens'
+    };
+    reader.readAsDataURL(file);
 }
 
 function renderFiles() {
@@ -242,6 +244,7 @@ function openApp(appId) {
             updateTaskbar();
         }
         if (appId === 'files') renderFiles();
+        if (appId === 'settings') renderWallpaperHistory();
     }
 }
 
