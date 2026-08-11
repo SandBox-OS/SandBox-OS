@@ -11,8 +11,16 @@ let virtualFileSystem = {
     videos: []
 };
 
+// Mapeamento de Ícones dos Apps
+const appIcons = {
+    'notepad': '📝',
+    'settings': '⚙️',
+    'calc': '🧮',
+    'files': '📁'
+};
+
 function initializeOS() {
-    // Restaurar Wallpaper/Plano de Fundo (Integração com a nova lógica)
+    // Restaurar Wallpaper/Plano de Fundo
     const savedWallpaper = localStorage.getItem('sandbox_wallpaper');
     const wallpaperType = localStorage.getItem('sandbox_wallpaper_type');
     const savedBg = localStorage.getItem("sandboxos_bg");
@@ -24,6 +32,8 @@ function initializeOS() {
             desktop.style.backgroundColor = savedWallpaper;
         } else {
             desktop.style.backgroundImage = `url('${savedWallpaper}')`;
+            desktop.style.backgroundSize = 'cover';
+            desktop.style.backgroundPosition = 'center';
         }
     } else if (savedBg) {
         applyBackgroundLogic(savedBg);
@@ -231,7 +241,7 @@ function renderWallpaperHistory() {
     });
 }
 
-// --- 🖱️ DRAG & DROP ÍCONES ---
+// --- 🖱️ DRAG & DROP ÍCONES (COM SUPORTE A SELEÇÃO MÚLTIPLA) ---
 function makeShortcutDraggable(elmnt) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let isDragging = false;
@@ -239,6 +249,14 @@ function makeShortcutDraggable(elmnt) {
     elmnt.onmousedown = function(e) {
         e = e || window.event;
         e.stopPropagation();
+        
+        if (!elmnt.classList.contains('selected')) {
+            if (!e.ctrlKey) {
+                document.querySelectorAll('.draggable-shortcut').forEach(s => s.classList.remove('selected'));
+            }
+            elmnt.classList.add('selected');
+        }
+
         isDragging = false;
         pos3 = e.clientX; 
         pos4 = e.clientY;
@@ -255,18 +273,22 @@ function makeShortcutDraggable(elmnt) {
         pos3 = e.clientX; 
         pos4 = e.clientY;
 
-        let newTop = elmnt.offsetTop - pos2; 
-        let newLeft = elmnt.offsetLeft - pos1;
-        const maxW = window.innerWidth - 85; 
-        const maxH = window.innerHeight - 130;
+        const selectedShortcuts = document.querySelectorAll('.draggable-shortcut.selected');
+        
+        selectedShortcuts.forEach(shortcut => {
+            let newTop = shortcut.offsetTop - pos2; 
+            let newLeft = shortcut.offsetLeft - pos1;
+            const maxW = window.innerWidth - 85; 
+            const maxH = window.innerHeight - 130;
 
-        if (newTop < 10) newTop = 10; 
-        if (newLeft < 10) newLeft = 10;
-        if (newLeft > maxW) newLeft = maxW; 
-        if (newTop > maxH) newTop = maxH;
+            if (newTop < 10) newTop = 10; 
+            if (newLeft < 10) newLeft = 10;
+            if (newLeft > maxW) newLeft = maxW; 
+            if (newTop > maxH) newTop = maxH;
 
-        elmnt.style.top = newTop + "px"; 
-        elmnt.style.left = newLeft + "px";
+            shortcut.style.top = newTop + "px"; 
+            shortcut.style.left = newLeft + "px";
+        });
     }
 
     function closeDragShortcut() {
@@ -274,34 +296,18 @@ function makeShortcutDraggable(elmnt) {
         document.onmousemove = null;
 
         if (isDragging) {
-            let snappedLeft = Math.round((elmnt.offsetLeft - 10) / gridX) * gridX + 20;
-            let snappedTop = Math.round((elmnt.offsetTop - 10) / gridY) * gridY + 20;
-            let positionOccupied = true;
+            const selectedShortcuts = document.querySelectorAll('.draggable-shortcut.selected');
+            selectedShortcuts.forEach(shortcut => {
+                let snappedLeft = Math.round((shortcut.offsetLeft - 10) / gridX) * gridX + 20;
+                let snappedTop = Math.round((shortcut.offsetTop - 10) / gridY) * gridY + 20;
 
-            while (positionOccupied) {
-                positionOccupied = false;
-                const shortcuts = document.querySelectorAll('.draggable-shortcut');
-                for (let i = 0; i < shortcuts.length; i++) {
-                    const other = shortcuts[i];
-                    if (other.id !== elmnt.id) {
-                        if (other.style.left === snappedLeft + "px" && other.style.top === snappedTop + "px") {
-                            positionOccupied = true; 
-                            break;
-                        }
-                    }
-                }
-                if (positionOccupied) snappedTop += gridY;
-            }
+                const maxH = window.innerHeight - 130;
+                if (snappedTop > maxH) snappedTop = maxH;
 
-            const maxH = window.innerHeight - 130;
-            if (snappedTop > maxH) { 
-                snappedTop = 20; 
-                snappedLeft += gridX; 
-            }
-
-            elmnt.style.left = snappedLeft + "px"; 
-            elmnt.style.top = snappedTop + "px";
-            localStorage.setItem("pos_" + elmnt.id, JSON.stringify({ top: elmnt.style.top, left: elmnt.style.left }));
+                shortcut.style.left = snappedLeft + "px"; 
+                shortcut.style.top = snappedTop + "px";
+                localStorage.setItem("pos_" + shortcut.id, JSON.stringify({ top: shortcut.style.top, left: shortcut.style.left }));
+            });
         }
     }
 }
@@ -359,6 +365,16 @@ function renderFiles() {
             <div class="file-icon">${icon}</div>
             <div class="file-name" title="${file.name}">${file.name}</div>
         `;
+
+        // Se for imagem, ao clicar duas vezes define como wallpaper
+        if (file.type.startsWith("image/")) {
+            fileItem.ondblclick = function() {
+                const bgData = `url('${file.data}')`;
+                changeBackground(bgData);
+                alert(`"${file.name}" foi definido como Plano de Fundo!`);
+            };
+        }
+
         container.appendChild(fileItem);
     });
 }
@@ -368,7 +384,7 @@ function saveNoteText() {
     if (textarea) localStorage.setItem("sandboxos_note_text", textarea.value);
 }
 
-// --- 🪟 JANELAS & SNAP ---
+// --- 🪟 JANELAS & TRAVA NAS BORDAS ---
 function openApp(appId) {
     const win = document.getElementById("win-" + appId);
     if (win) {
@@ -395,7 +411,6 @@ function makeDraggableAndResizable(elmnt) {
         if (['BUTTON', 'INPUT', 'LABEL', 'TEXTAREA'].includes(e.target.tagName)) return; 
         e.preventDefault();
         
-        // Remove SNAP ao arrastar
         elmnt.classList.remove('snap-left', 'snap-right');
 
         pos3 = e.clientX; 
@@ -415,6 +430,16 @@ function makeDraggableAndResizable(elmnt) {
         let newTop = elmnt.offsetTop - pos2; 
         let newLeft = elmnt.offsetLeft - pos1;
 
+        // TRAVA NAS BORDAS DA TELA (Limits Boundaries)
+        const taskbarHeight = 45;
+        const maxTop = window.innerHeight - taskbarHeight - 40;
+        const maxLeft = window.innerWidth - 60;
+
+        if (newTop < 0) newTop = 0;
+        if (newLeft < 0) newLeft = 0;
+        if (newTop > maxTop) newTop = maxTop;
+        if (newLeft > maxLeft) newLeft = maxLeft;
+
         elmnt.style.top = newTop + "px"; 
         elmnt.style.left = newLeft + "px";
     }
@@ -423,7 +448,6 @@ function makeDraggableAndResizable(elmnt) {
         document.onmouseup = null; 
         document.onmousemove = null; 
 
-        // Lógica de SNAP ao soltar na borda
         if (e.clientX <= 10) {
             elmnt.classList.add('snap-left');
         } else if (e.clientX >= window.innerWidth - 10) {
@@ -506,6 +530,7 @@ function maximizeApp(appId) {
     }
 }
 
+// --- 📌 BARRA DE TAREFAS SÓ COM ÍCONES ---
 function updateTaskbar() {
     const container = document.getElementById('taskbar-apps');
     if (!container) return;
@@ -514,13 +539,10 @@ function updateTaskbar() {
         const btn = document.createElement('button');
         btn.id = "tb-" + appId;
         btn.className = 'taskbar-button';
-        const nameMap = { 
-            'notepad': '📝 Bloco de Notas', 
-            'settings': '⚙️ Configurações', 
-            'calc': '🧮 Calculadora', 
-            'files': '📁 Meus Arquivos' 
-        };
-        btn.innerText = nameMap[appId] || appId;
+        btn.title = appId.toUpperCase();
+        
+        btn.innerHTML = `<span class="taskbar-icon">${appIcons[appId] || '🖥️'}</span>`;
+        
         btn.onclick = function() {
             const win = document.getElementById("win-" + appId);
             if (win.style.display === 'none') {
@@ -562,6 +584,8 @@ function clearSystemData() {
 function changeBackground(colorOrType) {
     applyBackgroundLogic(colorOrType);
     localStorage.setItem("sandboxos_bg", colorOrType);
+    localStorage.setItem("sandbox_wallpaper", colorOrType.replace("url('", "").replace("')", ""));
+    localStorage.setItem("sandbox_wallpaper_type", colorOrType.startsWith("url") ? "image" : "color");
 }
 
 function applyBackgroundLogic(colorOrType) {
@@ -579,7 +603,6 @@ function applyBackgroundLogic(colorOrType) {
 // CONFIGURAÇÕES E PERSONALIZAÇÃO DE TELA
 // ==========================================
 
-// Alternar abas das Configurações
 function switchSettingsTab(tabName) {
     document.querySelectorAll('.settings-tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.settings-tab-content').forEach(content => content.classList.remove('active'));
@@ -591,7 +614,6 @@ function switchSettingsTab(tabName) {
     if (activeContent) activeContent.classList.add('active');
 }
 
-// Aplicar cor sólida como wallpaper
 function setSolidWallpaper(color) {
     const desktop = document.getElementById('desktop');
     if (desktop) {
@@ -602,7 +624,6 @@ function setSolidWallpaper(color) {
     }
 }
 
-// Abrir a janela Meus Arquivos na pasta de Imagens para escolher wallpaper
 function openFilesForWallpaper() {
     if (typeof openApp === 'function') {
         openApp('files');
@@ -610,7 +631,6 @@ function openFilesForWallpaper() {
         openAppFromStart('files');
     }
     
-    // Mudar para a pasta de imagens se a função existir
     if (typeof switchFolder === 'function') {
         switchFolder('imagens');
     }
