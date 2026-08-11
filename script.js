@@ -12,8 +12,22 @@ let virtualFileSystem = {
 };
 
 function initializeOS() {
+    // Restaurar Wallpaper/Plano de Fundo (Integração com a nova lógica)
+    const savedWallpaper = localStorage.getItem('sandbox_wallpaper');
+    const wallpaperType = localStorage.getItem('sandbox_wallpaper_type');
     const savedBg = localStorage.getItem("sandboxos_bg");
-    if (savedBg) applyBackgroundLogic(savedBg);
+    const desktop = document.getElementById('desktop');
+
+    if (savedWallpaper && desktop) {
+        if (wallpaperType === 'color') {
+            desktop.style.backgroundImage = 'none';
+            desktop.style.backgroundColor = savedWallpaper;
+        } else {
+            desktop.style.backgroundImage = `url('${savedWallpaper}')`;
+        }
+    } else if (savedBg) {
+        applyBackgroundLogic(savedBg);
+    }
 
     const savedText = localStorage.getItem("sandboxos_note_text");
     const textarea = document.getElementById("notepad-textarea");
@@ -558,5 +572,46 @@ function applyBackgroundLogic(colorOrType) {
         desktop.style.backgroundSize = "cover";
     } else {
         desktop.style.background = colorOrType;
+    }
+}
+
+// ==========================================
+// CONFIGURAÇÕES E PERSONALIZAÇÃO DE TELA
+// ==========================================
+
+// Alternar abas das Configurações
+function switchSettingsTab(tabName) {
+    document.querySelectorAll('.settings-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.settings-tab-content').forEach(content => content.classList.remove('active'));
+
+    const activeBtn = document.querySelector(`.settings-tab-btn[onclick*="${tabName}"]`);
+    const activeContent = document.getElementById(`settings-tab-${tabName}`);
+
+    if (activeBtn) activeBtn.classList.add('active');
+    if (activeContent) activeContent.classList.add('active');
+}
+
+// Aplicar cor sólida como wallpaper
+function setSolidWallpaper(color) {
+    const desktop = document.getElementById('desktop');
+    if (desktop) {
+        desktop.style.backgroundImage = 'none';
+        desktop.style.backgroundColor = color;
+        localStorage.setItem('sandbox_wallpaper', color);
+        localStorage.setItem('sandbox_wallpaper_type', 'color');
+    }
+}
+
+// Abrir a janela Meus Arquivos na pasta de Imagens para escolher wallpaper
+function openFilesForWallpaper() {
+    if (typeof openApp === 'function') {
+        openApp('files');
+    } else if (typeof openAppFromStart === 'function') {
+        openAppFromStart('files');
+    }
+    
+    // Mudar para a pasta de imagens se a função existir
+    if (typeof switchFolder === 'function') {
+        switchFolder('imagens');
     }
 }
