@@ -412,3 +412,79 @@ body, html {
 .start-app-item:hover {
     background: #0078d4;
 }
+/* ==========================================
+   ESTILOS DA CALCULADORA
+   ========================================== */
+
+/* Janela da Calculadora */
+#window-calculator {
+  width: 280px;
+  background-color: #2b2b2b;
+  border: 1px solid #444;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Visor / Display */
+.calc-display {
+  width: 100%;
+  height: 50px;
+  background-color: #1e1e1e;
+  color: #ffffff;
+  border: none;
+  font-size: 24px;
+  text-align: right;
+  padding: 10px 15px;
+  box-sizing: border-box;
+  outline: none;
+  font-weight: bold;
+}
+
+/* Grade de Botões */
+.calc-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 10px;
+}
+
+/* Botões Padrão */
+.calc-buttons button {
+  height: 45px;
+  font-size: 18px;
+  background-color: #3c3c3c;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.calc-buttons button:hover {
+  background-color: #505050;
+}
+
+.calc-buttons button:active {
+  background-color: #666666;
+}
+
+/* Botões de Operação (+, -, *, /, =) */
+.calc-buttons button.operator {
+  background-color: #0078d4;
+  color: #ffffff;
+}
+
+.calc-buttons button.operator:hover {
+  background-color: #106ebe;
+}
+
+/* Botão Limpar (C) */
+.calc-buttons button.clear {
+  background-color: #d13438;
+  color: #ffffff;
+}
+
+.calc-buttons button.clear:hover {
+  background-color: #a80000;
+}
