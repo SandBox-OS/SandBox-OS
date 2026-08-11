@@ -144,7 +144,7 @@
         </div>
 
         <!-- Configurações -->
-        <div class="window" id="win-settings" style="top: 140px; left: 260px; width: 480px; height: 360px;">
+        <div class="window" id="win-settings" style="top: 140px; left: 260px; width: 500px; height: 400px;">
             <div class="border-top"></div><div class="border-bottom"></div><div class="border-left"></div><div class="border-right"></div>
             <div class="window-header" id="win-settings-header">
                 <span class="window-title">⚙️ Configurações</span>
@@ -154,11 +154,44 @@
                     <button class="win-btn close-btn" onclick="closeApp('settings')">✕</button>
                 </div>
             </div>
-            <div class="window-body" style="padding: 15px;">
-                <h3 style="margin-top:0;">Papéis de Parede (Pasta Imagens)</h3>
-                <div id="wallpaper-history-grid" class="wallpaper-grid"></div>
-                <hr style="margin: 15px 0; border: 0; border-top: 1px solid #444;">
-                <button onclick="clearSystemData()" style="background:#d9534f; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Restaurar Sistema</button>
+            <div class="window-body settings-layout">
+                <!-- Sidebar das Configurações -->
+                <div class="settings-sidebar">
+                    <button class="settings-tab-btn active" onclick="switchSettingsTab('screen')">🖥️ Tela</button>
+                    <button class="settings-tab-btn" onclick="switchSettingsTab('system')">⚙️ Sistema</button>
+                </div>
+
+                <!-- Conteúdo das Configurações -->
+                <div class="settings-content">
+                    <!-- Aba Tela -->
+                    <div id="settings-tab-screen" class="settings-tab-content active">
+                        <h4>Personalização de Tela</h4>
+                        
+                        <p class="settings-label">Cores Sólidas de Fundo:</p>
+                        <div class="color-palette">
+                            <button class="color-btn" style="background-color: #2b2e38;" title="Grafite" onclick="setSolidWallpaper('#2b2e38')"></button>
+                            <button class="color-btn" style="background-color: #0078d4;" title="Azul Windows" onclick="setSolidWallpaper('#0078d4')"></button>
+                            <button class="color-btn" style="background-color: #107c41;" title="Verde" onclick="setSolidWallpaper('#107c41')"></button>
+                            <button class="color-btn" style="background-color: #881798;" title="Roxo" onclick="setSolidWallpaper('#881798')"></button>
+                            <button class="color-btn" style="background-color: #d13438;" title="Vermelho" onclick="setSolidWallpaper('#d13438')"></button>
+                            <button class="color-btn" style="background-color: #00828a;" title="Ciano" onclick="setSolidWallpaper('#00828a')"></button>
+                        </div>
+
+                        <hr class="settings-divider">
+
+                        <p class="settings-label">Imagem de Fundo:</p>
+                        <button class="btn-primary" onclick="openFilesForWallpaper()">📁 Escolher dos Meus Arquivos</button>
+                        
+                        <div id="wallpaper-history-grid" class="wallpaper-grid" style="margin-top: 10px;"></div>
+                    </div>
+
+                    <!-- Aba Sistema -->
+                    <div id="settings-tab-system" class="settings-tab-content">
+                        <h4>Opções do Sistema</h4>
+                        <p style="font-size: 13px; color: #aaa;">Restaurar as configurações e arquivos para o estado padrão.</p>
+                        <button onclick="clearSystemData()" style="background:#d9534f; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Restaurar Sistema</button>
+                    </div>
+                </div>
             </div>
             <div class="window-resize-handle"></div>
         </div>
@@ -166,7 +199,7 @@
 
     <!-- Barra de Tarefas -->
     <div id="taskbar">
-        <button id="start-btn" onclick="toggleStartMenu(event)">🌀 Iniciar</button>
+        <button id="start-btn" onclick="toggleStartMenu(event)">Iniciar</button>
         
         <div id="taskbar-apps"></div>
 
@@ -198,55 +231,3 @@
     <script src="apps/calculator.js"></script>
 </body>
 </html>
-<!-- Configurações -->
-<div class="window" id="win-settings" style="top: 140px; left: 260px; width: 500px; height: 400px;">
-    <div class="border-top"></div><div class="border-bottom"></div><div class="border-left"></div><div class="border-right"></div>
-    <div class="window-header" id="win-settings-header">
-        <span class="window-title">⚙️ Configurações</span>
-        <div class="window-controls">
-            <button class="win-btn min-btn" onclick="minimizeApp('settings')">🗕</button>
-            <button class="win-btn max-btn" onclick="maximizeApp('settings')">🗖</button>
-            <button class="win-btn close-btn" onclick="closeApp('settings')">✕</button>
-        </div>
-    </div>
-    <div class="window-body settings-layout">
-        <!-- Sidebar de Navegação das Configurações -->
-        <div class="settings-sidebar">
-            <button class="settings-tab-btn active" onclick="switchSettingsTab('screen')">🖥️ Tela</button>
-            <button class="settings-tab-btn" onclick="switchSettingsTab('system')">⚙️ Sistema</button>
-        </div>
-
-        <!-- Conteúdo das Configurações -->
-        <div class="settings-content">
-            <!-- Aba Tela -->
-            <div id="settings-tab-screen" class="settings-tab-content active">
-                <h4>Personalização de Tela</h4>
-                
-                <p class="settings-label">Cores Sólidas de Fundo:</p>
-                <div class="color-palette">
-                    <button class="color-btn" style="background-color: #2b2b2b;" title="Grafite Escuro" onclick="setSolidWallpaper('#2b2b2b')"></button>
-                    <button class="color-btn" style="background-color: #0078d4;" title="Azul Windows" onclick="setSolidWallpaper('#0078d4')"></button>
-                    <button class="color-btn" style="background-color: #107c41;" title="Verde Escuro" onclick="setSolidWallpaper('#107c41')"></button>
-                    <button class="color-btn" style="background-color: #881798;" title="Roxo" onclick="setSolidWallpaper('#881798')"></button>
-                    <button class="color-btn" style="background-color: #d13438;" title="Vermelho" onclick="setSolidWallpaper('#d13438')"></button>
-                    <button class="color-btn" style="background-color: #00828a;" title="Ciano" onclick="setSolidWallpaper('#00828a')"></button>
-                </div>
-
-                <hr class="settings-divider">
-
-                <p class="settings-label">Imagem de Fundo:</p>
-                <button class="btn-primary" onclick="openFilesForWallpaper()">📁 Escolher dos Meus Arquivos</button>
-                
-                <div id="wallpaper-history-grid" class="wallpaper-grid" style="margin-top: 10px;"></div>
-            </div>
-
-            <!-- Aba Sistema -->
-            <div id="settings-tab-system" class="settings-tab-content">
-                <h4>Opções do Sistema</h4>
-                <p style="font-size: 13px; color: #aaa;">Restaurar as configurações e arquivos para o estado padrão.</p>
-                <button onclick="clearSystemData()" style="background:#d9534f; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Restaurar Sistema</button>
-            </div>
-        </div>
-    </div>
-    <div class="window-resize-handle"></div>
-</div>
