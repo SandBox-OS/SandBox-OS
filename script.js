@@ -1,6 +1,3 @@
-// ==========================================
-// CONFIGURAÇÃO DO SUPABASE
-// ==========================================
 const SUPABASE_URL = 'https://wkofppnubrxrlhvrzfir.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_B0MrTnAMNF6o_-0LNBlBSA_QcyfeM8U';
 
@@ -9,7 +6,7 @@ if (typeof supabase !== 'undefined' && SUPABASE_URL !== 'SUA_SUPABASE_URL_AQUI')
     supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
-let isSignUpMode = true; // Alterna entre Criar Conta (true) e Fazer Login (false)
+let isSignUpMode = true;
 
 let highestZIndex = 10;
 const openAppsList = {}; 
@@ -24,11 +21,9 @@ let virtualFileSystem = {
     videos: []
 };
 
-// Variáveis para Controle do Debounce do Bloco de Notas
 let notepadSaveTimeout = null;
 let lastSavedContent = "";
 
-// Mapeamento de Ícones dos Apps
 const appIcons = {
     'notepad': '📝',
     'settings': '⚙️',
@@ -36,7 +31,6 @@ const appIcons = {
     'files': '📁'
 };
 
-// --- 🔐 GERENCIAMENTO DE SESSÃO E AUTENTICAÇÃO ---
 async function checkUserSession() {
     if (!supabaseClient) {
         document.getElementById("auth-modal-overlay").style.display = "none";
@@ -48,8 +42,7 @@ async function checkUserSession() {
         document.getElementById("auth-modal-overlay").style.display = "none";
         const username = session.user.user_metadata?.username || session.user.email.split('@')[0];
         updateUserInfoUI(username);
-        
-        // Carregar nota da nuvem ao iniciar
+
         loadUserNote();
     } else {
         document.getElementById("auth-modal-overlay").style.display = "flex";
@@ -178,7 +171,6 @@ function initializeOS() {
         }
     }
 
-    // Inicializar Eventos do Bloco de Notas (Debounce + Blur)
     initNotepadEvents();
 
     renderWallpaperHistory();
@@ -212,24 +204,19 @@ function initializeOS() {
 
 document.addEventListener("DOMContentLoaded", initializeOS);
 
-// --- 📝 BLOCO DE NOTAS (DEBOUNCE + BANCO DE DADOS) ---
-
 function initNotepadEvents() {
     const textarea = document.getElementById("notepad-textarea");
     if (!textarea) return;
 
-    // 1. Ao digitar, ativa o timer de Debounce
     textarea.addEventListener("input", () => {
         setNotepadStatus("Digitando...");
         if (notepadSaveTimeout) clearTimeout(notepadSaveTimeout);
 
-        // Aguarda 1.5s de inatividade antes de salvar
         notepadSaveTimeout = setTimeout(() => {
             saveNoteToCloud();
         }, 1500);
     });
 
-    // 2. Ao perder o foco (blur), salva imediatamente
     textarea.addEventListener("blur", () => {
         if (notepadSaveTimeout) clearTimeout(notepadSaveTimeout);
         saveNoteToCloud();
@@ -247,13 +234,11 @@ async function saveNoteToCloud() {
 
     const currentContent = textarea.value;
 
-    // Evita requisições desnecessárias se nada mudou
     if (currentContent === lastSavedContent) {
         setNotepadStatus("Salvo na nuvem ✓");
         return;
     }
 
-    // Salva localmente como backup rápido
     localStorage.setItem("sandboxos_note_text", currentContent);
 
     if (!supabaseClient) {
@@ -270,7 +255,6 @@ async function saveNoteToCloud() {
 
     setNotepadStatus("Salvando na nuvem...");
 
-    // Verifica se já existe uma nota do usuário
     const { data: existingNotes } = await supabaseClient
         .from('notes')
         .select('id')
@@ -280,14 +264,14 @@ async function saveNoteToCloud() {
     let error = null;
 
     if (existingNotes && existingNotes.length > 0) {
-        // Atualiza nota existente
+        
         const { error: updateErr } = await supabaseClient
             .from('notes')
             .update({ content: currentContent, updated_at: new Date() })
             .eq('id', existingNotes[0].id);
         error = updateErr;
     } else {
-        // Cria nova nota
+        
         const { error: insertErr } = await supabaseClient
             .from('notes')
             .insert([{ user_id: user.id, title: 'Minhas Anotações', content: currentContent }]);
@@ -333,7 +317,6 @@ async function loadUserNote() {
     }
 }
 
-// --- 🕒 RELÓGIO & CALENDÁRIO ---
 function updateClockEngine() {
     const timeEl = document.getElementById("clock-time");
     const dateEl = document.getElementById("clock-date");
@@ -390,7 +373,6 @@ function renderCalendar() {
     }
 }
 
-// --- 🔔 ÁREA DE NOTIFICAÇÃO (TRAY) ---
 function toggleTrayPopup(popupId, event) {
     event.stopPropagation();
     const targetPopup = document.getElementById(popupId);
@@ -407,7 +389,6 @@ function closeAllPopups() {
     document.querySelectorAll('.tray-popup').forEach(p => p.style.display = 'none');
 }
 
-// --- 🔍 MENU INICIAR COM BUSCA ---
 function filterStartMenuApps(query) {
     const filter = query.toLowerCase();
     document.querySelectorAll('.start-app-item').forEach(item => {
@@ -416,7 +397,6 @@ function filterStartMenuApps(query) {
     });
 }
 
-// --- 🖱️ SELEÇÃO MÚLTIPLA NO DESKTOP ---
 function initDesktopSelection() {
     const desktop = document.getElementById('desktop');
     const box = document.getElementById('selection-box');
@@ -469,8 +449,6 @@ function initDesktopSelection() {
         }
     });
 }
-
-// --- 🎨 WALLPAPERS E PERSONALIZAÇÃO ---
 
 function setSolidWallpaper(color) {
     const desktop = document.getElementById('desktop');
@@ -541,8 +519,6 @@ function openFilesForWallpaper() {
     openApp('files');
     switchFolder('imagens');
 }
-
-// --- 🖱️ DRAG & DROP ÍCONES ---
 function makeShortcutDraggable(elmnt) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let isDragging = false;
@@ -613,10 +589,6 @@ function makeShortcutDraggable(elmnt) {
     }
 }
 
-// ==========================================
-// 📁 SUPABASE STORAGE (MEUS ARQUIVOS)
-// ==========================================
-
 function switchFolder(folderName) {
     currentFolder = folderName;
     document.querySelectorAll('.file-manager-sidebar button').forEach(btn => btn.classList.remove('active'));
@@ -625,7 +597,6 @@ function switchFolder(folderName) {
     carregarMeusArquivos();
 }
 
-// 1. Upload de Arquivo
 async function uploadArquivo(input) {
     const file = input.files[0];
     if (!file) return;
@@ -662,7 +633,6 @@ async function uploadArquivo(input) {
     carregarMeusArquivos();
 }
 
-// 2. Carregar e Renderizar Arquivos do Supabase
 async function carregarMeusArquivos() {
     const container = document.getElementById("file-list-container");
     if (!container) return;
@@ -726,7 +696,6 @@ async function carregarMeusArquivos() {
     });
 }
 
-// 3. Excluir Arquivo da Nuvem
 async function deletarArquivo(fileName) {
     if (!confirm("Tem certeza que deseja excluir este arquivo?")) return;
 
@@ -747,7 +716,6 @@ async function deletarArquivo(fileName) {
     }
 }
 
-// --- 🪟 JANELAS & TRAVA NAS BORDAS ---
 function openApp(appId) {
     const win = document.getElementById("win-" + appId);
     if (win) {
@@ -892,7 +860,6 @@ function maximizeApp(appId) {
     }
 }
 
-// --- 📌 BARRA DE TAREFAS SÓ COM ÍCONES ---
 function updateTaskbar() {
     const container = document.getElementById('taskbar-apps');
     if (!container) return;
