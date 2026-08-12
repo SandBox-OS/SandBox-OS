@@ -43,7 +43,7 @@ async function checkUserSession() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
         document.getElementById("auth-modal-overlay").style.display = "none";
-        const username = session.user.user_metadata.username || session.user.email.split('@')[0];
+        const username = session.user.user_metadata?.username || session.user.email.split('@')[0];
         updateUserInfoUI(username);
     } else {
         document.getElementById("auth-modal-overlay").style.display = "flex";
@@ -128,7 +128,7 @@ async function handleAuthSubmit(event) {
             if (error) throw error;
 
             document.getElementById("auth-modal-overlay").style.display = "none";
-            const loggedUsername = data.user.user_metadata.username || usernameInput;
+            const loggedUsername = data.user.user_metadata?.username || usernameInput;
             updateUserInfoUI(loggedUsername);
         }
     } catch (err) {
@@ -360,7 +360,7 @@ function renderWallpaperHistory() {
     const imagesInFolder = virtualFileSystem.imagens || [];
 
     if (imagesInFolder.length === 0) {
-        container.innerHTML = "<p style='color:#999; font-size:12px; grid-column: 1 / -1;'>Nenhuma imagem na pasta 'Imagens'.</p>";
+        container.innerHTML = "<p style='color:#999; font-size:12px; grid-column: 1 / -1;'>Nenhuma imagem local disponível.</p>";
         return;
     }
 
@@ -449,70 +449,131 @@ function makeShortcutDraggable(elmnt) {
     }
 }
 
-// --- 📁 EXPLORADOR DE ARQUIVOS ---
+// ==========================================
+// 📁 SUPABASE STORAGE (MEUS ARQUIVOS)
+// ==========================================
+
 function switchFolder(folderName) {
     currentFolder = folderName;
     document.querySelectorAll('.file-manager-sidebar button').forEach(btn => btn.classList.remove('active'));
     const activeBtn = document.getElementById("folder-btn-" + folderName);
     if (activeBtn) activeBtn.classList.add('active');
-    renderFiles();
+    carregarMeusArquivos();
 }
 
-function handleFileUpload(event) {
-    const file = event.target.files[0];
+// 1. Upload de Arquivo para a Nuvem
+async function uploadArquivo(input) {
+    const file = input.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const newFile = { 
-            name: file.name, 
-            type: file.type,
-            data: e.target.result
-        };
-        virtualFileSystem[currentFolder].push(newFile);
-        localStorage.setItem("sandboxos_files", JSON.stringify(virtualFileSystem));
-        renderFiles();
-        renderWallpaperHistory();
-    };
-    reader.readAsDataURL(file);
-}
-
-function renderFiles() {
-    const container = document.getElementById("file-list-container");
-    if (!container) return;
-    container.innerHTML = "";
-
-    const filesInFolder = virtualFileSystem[currentFolder];
-
-    if (filesInFolder.length === 0) {
-        container.innerHTML = "<p style='color:#999; font-size:13px; padding:10px;'>Esta pasta está vazia.</p>";
+    if (!supabaseClient) {
+        alert("Supabase não está configurado!");
         return;
     }
 
-    filesInFolder.forEach(function(file) {
-        const fileItem = document.createElement("div");
-        fileItem.className = "file-item";
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+        alert("Sua sessão expirou. Faça login novamente para enviar arquivos.");
+        return;
+    }
 
-        let icon = "📄";
-        if (file.type.startsWith("image/")) icon = "🖼️";
-        else if (file.type.startsWith("video/")) icon = "🎬";
-        else if (file.type.includes("pdf")) icon = "📕";
+    const filePath = `${user.id}/${Date.now()}_${file.name}`;
+    const filesList = document.getElementById('file-list-container');
+    if (filesList) {
+        filesList.innerHTML = '<p style="color: #0078d4; font-size: 12px; padding: 10px;">Enviando arquivo para a nuvem...</p>';
+    }
+
+    const { error } = await supabaseClient
+        .storage
+        .from('meus-arquivos')
+        .upload(filePath, file);
+
+    if (error) {
+        alert("Erro no upload: " + error.message);
+    } else {
+        alert("Arquivo enviado com sucesso!");
+    }
+
+    input.value = '';
+    carregarMeusArquivos();
+}
+
+// 2. Carregar e Renderizar Arquivos do Supabase
+async function carregarMeusArquivos() {
+    const container = document.getElementById("file-list-container");
+    if (!container) return;
+
+    container.innerHTML = '<p style="color:#888; font-size:12px; padding:10px;">Carregando arquivos...</p>';
+
+    if (!supabaseClient) {
+        container.innerHTML = '<p style="color:#ff5555; font-size:12px; padding:10px;">Supabase não conectado.</p>';
+        return;
+    }
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+        container.innerHTML = '<p style="color:#888; font-size:12px; padding:10px;">Faça login para ver seus arquivos.</p>';
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .storage
+        .from('meus-arquivos')
+        .list(user.id);
+
+    if (error) {
+        console.error("Erro ao listar arquivos:", error);
+        container.innerHTML = '<p style="color:#ff5555; font-size:12px; padding:10px;">Erro ao carregar arquivos.</p>';
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p style="color:#888; font-size:12px; padding:10px;">Nenhum arquivo na nuvem.</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+
+    data.forEach(file => {
+        const { data: publicUrlData } = supabaseClient
+            .storage
+            .from('meus-arquivos')
+            .getPublicUrl(`${user.id}/${file.name}`);
+
+        const displayName = file.name.split('_').slice(1).join('_') || file.name;
+
+        const fileItem = document.createElement('div');
+        fileItem.style.cssText = 'text-align: center; width: 90px; word-break: break-all; margin: 5px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);';
 
         fileItem.innerHTML = `
-            <div class="file-icon">${icon}</div>
-            <div class="file-name" title="${file.name}">${file.name}</div>
+            <div style="font-size: 28px; cursor: pointer;" onclick="window.open('${publicUrlData.publicUrl}', '_blank')" title="Clique para abrir/baixar">📄</div>
+            <span style="font-size: 11px; display: block; margin-top: 4px; color: #eee; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${displayName}</span>
+            <button onclick="deletarArquivo('${file.name}')" style="background: none; border: none; color: #ff5555; cursor: pointer; font-size: 10px; margin-top: 4px;">Excluir</button>
         `;
-
-        if (file.type.startsWith("image/")) {
-            fileItem.ondblclick = function() {
-                const bgData = `url('${file.data}')`;
-                changeBackground(bgData);
-                alert(`"${file.name}" foi definido como Plano de Fundo!`);
-            };
-        }
 
         container.appendChild(fileItem);
     });
+}
+
+// 3. Excluir Arquivo da Nuvem
+async function deletarArquivo(fileName) {
+    if (!confirm("Tem certeza que deseja excluir este arquivo?")) return;
+
+    if (!supabaseClient) return;
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabaseClient
+        .storage
+        .from('meus-arquivos')
+        .remove([`${user.id}/${fileName}`]);
+
+    if (error) {
+        alert("Erro ao excluir: " + error.message);
+    } else {
+        carregarMeusArquivos();
+    }
 }
 
 function saveNoteText() {
@@ -530,7 +591,7 @@ function openApp(appId) {
             openAppsList[appId] = { maximized: false, prevStyle: {} };
             updateTaskbar();
         }
-        if (appId === 'files') renderFiles();
+        if (appId === 'files') carregarMeusArquivos();
         if (appId === 'settings') renderWallpaperHistory();
     }
 }
