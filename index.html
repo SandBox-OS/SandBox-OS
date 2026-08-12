@@ -5,8 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web OS Sandbox</title>
     <link rel="stylesheet" href="style.css">
+    <!-- SDK do Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body onclick="closeStartMenuOutside(event)">
+
+    <!-- Tela / Modal de Boas-Vindas e Login -->
+    <div id="auth-modal-overlay">
+        <div id="auth-modal">
+            <div class="auth-header">
+                <h2>🖥️ SandBox-OS</h2>
+                <p id="auth-subtitle">Crie sua conta para começar a usar</p>
+            </div>
+            
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+                <div class="auth-input-group">
+                    <label for="auth-username">Nome de Usuário *</label>
+                    <input type="text" id="auth-username" required placeholder="Digite seu usuário">
+                </div>
+
+                <div class="auth-input-group">
+                    <label for="auth-password">Senha *</label>
+                    <input type="password" id="auth-password" required placeholder="Digite sua senha">
+                </div>
+
+                <div class="auth-input-group">
+                    <label for="auth-email">E-mail (Opcional)</label>
+                    <input type="email" id="auth-email" placeholder="seu@email.com (opcional)">
+                </div>
+
+                <div id="auth-error-msg"></div>
+
+                <button type="submit" id="auth-submit-btn">Criar Conta e Entrar</button>
+            </form>
+
+            <div class="auth-toggle">
+                <span id="auth-toggle-text">Já tem uma conta?</span>
+                <a href="#" id="auth-toggle-link" onclick="toggleAuthMode(event)">Fazer Login</a>
+            </div>
+        </div>
+    </div>
 
     <!-- Área de Trabalho -->
     <div id="desktop">
@@ -52,7 +90,10 @@
                 <span>⚙️</span> Configurações
             </div>
         </div>
-        <button style="margin-top: 10px; background: #c42b1c; border: none; color: white; padding: 6px; border-radius: 4px; cursor: pointer;" onclick="clearSystemData()">Redefinir Sistema</button>
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <button style="flex: 1; background: #c42b1c; border: none; color: white; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 12px;" onclick="clearSystemData()">Redefinir</button>
+            <button style="flex: 1; background: #333; border: 1px solid #555; color: white; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 12px;" onclick="logoutUser()">Sair da Conta</button>
+        </div>
     </div>
 
     <!-- Popups da Tray -->
@@ -177,6 +218,7 @@
                     <div id="settings-tab-sistema" class="settings-tab-content">
                         <h3>Sobre o Sistema</h3>
                         <p style="font-size: 12px; color: #ccc; margin-top: 10px;">Web OS Sandbox v2.0</p>
+                        <p id="user-info-display" style="font-size: 12px; color: #00a4ef; margin-top: 5px;"></p>
                     </div>
                 </div>
             </div>
