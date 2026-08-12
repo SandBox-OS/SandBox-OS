@@ -1,3 +1,16 @@
+// ==========================================
+// CONFIGURAÇÃO DO SUPABASE
+// ==========================================
+const SUPABASE_URL = 'SUA_SUPABASE_URL_AQUI';
+const SUPABASE_ANON_KEY = 'SUA_SUPABASE_ANON_KEY_AQUI';
+
+let supabaseClient = null;
+if (typeof supabase !== 'undefined' && SUPABASE_URL !== 'SUA_SUPABASE_URL_AQUI') {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+let isSignUpMode = true; // Alterna entre Criar Conta (true) e Fazer Login (false)
+
 let highestZIndex = 10;
 const openAppsList = {}; 
 
@@ -19,7 +32,131 @@ const appIcons = {
     'files': '📁'
 };
 
+// --- 🔐 GERENCIAMENTO DE SESSÃO E AUTENTICAÇÃO ---
+async function checkUserSession() {
+    if (!supabaseClient) {
+        // Se ainda não configurou as chaves do Supabase, libera a tela normalmente em modo local
+        document.getElementById("auth-modal-overlay").style.display = "none";
+        return;
+    }
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+        document.getElementById("auth-modal-overlay").style.display = "none";
+        const username = session.user.user_metadata.username || session.user.email.split('@')[0];
+        updateUserInfoUI(username);
+    } else {
+        document.getElementById("auth-modal-overlay").style.display = "flex";
+    }
+}
+
+function toggleAuthMode(event) {
+    if (event) event.preventDefault();
+    isSignUpMode = !isSignUpMode;
+    
+    const subtitle = document.getElementById("auth-subtitle");
+    const submitBtn = document.getElementById("auth-submit-btn");
+    const toggleText = document.getElementById("auth-toggle-text");
+    const toggleLink = document.getElementById("auth-toggle-link");
+    const emailGroup = document.getElementById("auth-email").parentElement;
+    const errorMsg = document.getElementById("auth-error-msg");
+    
+    errorMsg.style.display = "none";
+
+    if (isSignUpMode) {
+        subtitle.innerText = "Crie sua conta para começar a usar";
+        submitBtn.innerText = "Criar Conta e Entrar";
+        toggleText.innerText = "Já tem uma conta?";
+        toggleLink.innerText = "Fazer Login";
+        emailGroup.style.display = "flex";
+    } else {
+        subtitle.innerText = "Digite suas credenciais para entrar";
+        submitBtn.innerText = "Entrar no OS";
+        toggleText.innerText = "Não tem uma conta?";
+        toggleLink.innerText = "Criar Conta";
+        emailGroup.style.display = "none";
+    }
+}
+
+async function handleAuthSubmit(event) {
+    event.preventDefault();
+    
+    const usernameInput = document.getElementById("auth-username").value.trim().toLowerCase();
+    const passwordInput = document.getElementById("auth-password").value;
+    const emailInput = document.getElementById("auth-email").value.trim();
+    const errorMsg = document.getElementById("auth-error-msg");
+    const submitBtn = document.getElementById("auth-submit-btn");
+
+    errorMsg.style.display = "none";
+
+    if (!supabaseClient) {
+        alert("Atenção: Configure as chaves do Supabase no topo do arquivo script.js para habilitar o login remoto.");
+        document.getElementById("auth-modal-overlay").style.display = "none";
+        return;
+    }
+
+    // Como o Supabase Auth exige formato de e-mail interno para autenticação por senha:
+    const targetEmail = emailInput || `${usernameInput}@sandboxos.internal`;
+
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Processando...";
+
+    try {
+        if (isSignUpMode) {
+            // Cadastro de Usuário
+            const { data, error } = await supabaseClient.auth.signUp({
+                email: targetEmail,
+                password: passwordInput,
+                options: {
+                    data: { username: usernameInput }
+                }
+            });
+
+            if (error) throw error;
+
+            alert("Conta criada com sucesso! Bem-vindo ao SandBox-OS.");
+            document.getElementById("auth-modal-overlay").style.display = "none";
+            updateUserInfoUI(usernameInput);
+
+        } else {
+            // Login de Usuário
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: targetEmail,
+                password: passwordInput
+            });
+
+            if (error) throw error;
+
+            document.getElementById("auth-modal-overlay").style.display = "none";
+            const loggedUsername = data.user.user_metadata.username || usernameInput;
+            updateUserInfoUI(loggedUsername);
+        }
+    } catch (err) {
+        errorMsg.innerText = err.message || "Ocorreu um erro ao autenticar.";
+        errorMsg.style.display = "block";
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = isSignUpMode ? "Criar Conta e Entrar" : "Entrar no OS";
+    }
+}
+
+function updateUserInfoUI(username) {
+    const userInfoEl = document.getElementById("user-info-display");
+    if (userInfoEl) userInfoEl.innerText = `Usuário Conectado: ${username}`;
+}
+
+async function logoutUser() {
+    if (confirm("Deseja encerrar a sessão e sair da conta?")) {
+        if (supabaseClient) {
+            await supabaseClient.auth.signOut();
+        }
+        window.location.reload();
+    }
+}
+
 function initializeOS() {
+    checkUserSession();
+
     // Restaurar Wallpaper/Plano de Fundo
     const savedWallpaper = localStorage.getItem('sandbox_wallpaper');
     const wallpaperType = localStorage.getItem('sandbox_wallpaper_type');
@@ -366,7 +503,6 @@ function renderFiles() {
             <div class="file-name" title="${file.name}">${file.name}</div>
         `;
 
-        // Se for imagem, ao clicar duas vezes define como wallpaper
         if (file.type.startsWith("image/")) {
             fileItem.ondblclick = function() {
                 const bgData = `url('${file.data}')`;
@@ -430,7 +566,6 @@ function makeDraggableAndResizable(elmnt) {
         let newTop = elmnt.offsetTop - pos2; 
         let newLeft = elmnt.offsetLeft - pos1;
 
-        // TRAVA NAS BORDAS DA TELA (Limits Boundaries)
         const taskbarHeight = 45;
         const maxTop = window.innerHeight - taskbarHeight - 40;
         const maxLeft = window.innerWidth - 60;
