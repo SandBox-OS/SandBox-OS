@@ -428,3 +428,34 @@ body, html {
     gap: 10px;
     margin-top: 10px;
 }
+/* Estilos para Apps Fixados e Abertos */
+.taskbar-button {
+    opacity: 0.7;
+    transition: all 0.2s;
+}
+
+.taskbar-button:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Indicador de que o app está aberto (ponto/linha azul embaixo) */
+.taskbar-button.is-open {
+    opacity: 1;
+}
+
+.taskbar-button.is-open::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    width: 12px;
+    height: 3px;
+    background-color: #0078d7;
+    border-radius: 2px;
+}
+
+/* App Focado/Ativo */
+.taskbar-button.active::after {
+    width: 18px;
+    background-color: #00a4ef;
+}
