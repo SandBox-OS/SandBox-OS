@@ -24,6 +24,10 @@ let virtualFileSystem = {
     videos: []
 };
 
+// Variáveis para Controle do Debounce do Bloco de Notas
+let notepadSaveTimeout = null;
+let lastSavedContent = "";
+
 // Mapeamento de Ícones dos Apps
 const appIcons = {
     'notepad': '📝',
@@ -35,7 +39,6 @@ const appIcons = {
 // --- 🔐 GERENCIAMENTO DE SESSÃO E AUTENTICAÇÃO ---
 async function checkUserSession() {
     if (!supabaseClient) {
-        // Se ainda não configurou as chaves do Supabase, libera a tela normalmente em modo local
         document.getElementById("auth-modal-overlay").style.display = "none";
         return;
     }
@@ -45,6 +48,9 @@ async function checkUserSession() {
         document.getElementById("auth-modal-overlay").style.display = "none";
         const username = session.user.user_metadata?.username || session.user.email.split('@')[0];
         updateUserInfoUI(username);
+        
+        // Carregar nota da nuvem ao iniciar
+        loadUserNote();
     } else {
         document.getElementById("auth-modal-overlay").style.display = "flex";
     }
@@ -90,12 +96,11 @@ async function handleAuthSubmit(event) {
     errorMsg.style.display = "none";
 
     if (!supabaseClient) {
-        alert("Atenção: Configure as chaves do Supabase no topo do arquivo script.js para habilitar o login remoto.");
+        alert("Atenção: Configure as chaves do Supabase no topo do arquivo script.js.");
         document.getElementById("auth-modal-overlay").style.display = "none";
         return;
     }
 
-    // Como o Supabase Auth exige formato de e-mail interno para autenticação por senha:
     const targetEmail = emailInput || `${usernameInput}@sandboxos.internal`;
 
     submitBtn.disabled = true;
@@ -103,7 +108,6 @@ async function handleAuthSubmit(event) {
 
     try {
         if (isSignUpMode) {
-            // Cadastro de Usuário
             const { data, error } = await supabaseClient.auth.signUp({
                 email: targetEmail,
                 password: passwordInput,
@@ -117,9 +121,9 @@ async function handleAuthSubmit(event) {
             alert("Conta criada com sucesso! Bem-vindo ao SandBox-OS.");
             document.getElementById("auth-modal-overlay").style.display = "none";
             updateUserInfoUI(usernameInput);
+            loadUserNote();
 
         } else {
-            // Login de Usuário
             const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email: targetEmail,
                 password: passwordInput
@@ -130,6 +134,7 @@ async function handleAuthSubmit(event) {
             document.getElementById("auth-modal-overlay").style.display = "none";
             const loggedUsername = data.user.user_metadata?.username || usernameInput;
             updateUserInfoUI(loggedUsername);
+            loadUserNote();
         }
     } catch (err) {
         errorMsg.innerText = err.message || "Ocorreu um erro ao autenticar.";
@@ -157,10 +162,9 @@ async function logoutUser() {
 function initializeOS() {
     checkUserSession();
 
-    // Restaurar Wallpaper/Plano de Fundo
+    // Restaurar Wallpaper / Plano de Fundo
     const savedWallpaper = localStorage.getItem('sandbox_wallpaper');
     const wallpaperType = localStorage.getItem('sandbox_wallpaper_type');
-    const savedBg = localStorage.getItem("sandboxos_bg");
     const desktop = document.getElementById('desktop');
 
     if (savedWallpaper && desktop) {
@@ -172,16 +176,10 @@ function initializeOS() {
             desktop.style.backgroundSize = 'cover';
             desktop.style.backgroundPosition = 'center';
         }
-    } else if (savedBg) {
-        applyBackgroundLogic(savedBg);
     }
 
-    const savedText = localStorage.getItem("sandboxos_note_text");
-    const textarea = document.getElementById("notepad-textarea");
-    if (textarea) textarea.value = savedText || "";
-
-    const savedFiles = localStorage.getItem("sandboxos_files");
-    if (savedFiles) virtualFileSystem = JSON.parse(savedFiles);
+    // Inicializar Eventos do Bloco de Notas (Debounce + Blur)
+    initNotepadEvents();
 
     renderWallpaperHistory();
 
@@ -213,6 +211,127 @@ function initializeOS() {
 }
 
 document.addEventListener("DOMContentLoaded", initializeOS);
+
+// --- 📝 BLOCO DE NOTAS (DEBOUNCE + BANCO DE DADOS) ---
+
+function initNotepadEvents() {
+    const textarea = document.getElementById("notepad-textarea");
+    if (!textarea) return;
+
+    // 1. Ao digitar, ativa o timer de Debounce
+    textarea.addEventListener("input", () => {
+        setNotepadStatus("Digitando...");
+        if (notepadSaveTimeout) clearTimeout(notepadSaveTimeout);
+
+        // Aguarda 1.5s de inatividade antes de salvar
+        notepadSaveTimeout = setTimeout(() => {
+            saveNoteToCloud();
+        }, 1500);
+    });
+
+    // 2. Ao perder o foco (blur), salva imediatamente
+    textarea.addEventListener("blur", () => {
+        if (notepadSaveTimeout) clearTimeout(notepadSaveTimeout);
+        saveNoteToCloud();
+    });
+}
+
+function setNotepadStatus(msg) {
+    const statusEl = document.getElementById("notepad-status");
+    if (statusEl) statusEl.innerText = msg;
+}
+
+async function saveNoteToCloud() {
+    const textarea = document.getElementById("notepad-textarea");
+    if (!textarea) return;
+
+    const currentContent = textarea.value;
+
+    // Evita requisições desnecessárias se nada mudou
+    if (currentContent === lastSavedContent) {
+        setNotepadStatus("Salvo na nuvem ✓");
+        return;
+    }
+
+    // Salva localmente como backup rápido
+    localStorage.setItem("sandboxos_note_text", currentContent);
+
+    if (!supabaseClient) {
+        setNotepadStatus("Salvo localmente");
+        lastSavedContent = currentContent;
+        return;
+    }
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+        setNotepadStatus("Não conectado (Salvo local)");
+        return;
+    }
+
+    setNotepadStatus("Salvando na nuvem...");
+
+    // Verifica se já existe uma nota do usuário
+    const { data: existingNotes } = await supabaseClient
+        .from('notes')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+    let error = null;
+
+    if (existingNotes && existingNotes.length > 0) {
+        // Atualiza nota existente
+        const { error: updateErr } = await supabaseClient
+            .from('notes')
+            .update({ content: currentContent, updated_at: new Date() })
+            .eq('id', existingNotes[0].id);
+        error = updateErr;
+    } else {
+        // Cria nova nota
+        const { error: insertErr } = await supabaseClient
+            .from('notes')
+            .insert([{ user_id: user.id, title: 'Minhas Anotações', content: currentContent }]);
+        error = insertErr;
+    }
+
+    if (error) {
+        console.error("Erro ao salvar nota:", error);
+        setNotepadStatus("Erro ao salvar na nuvem");
+    } else {
+        lastSavedContent = currentContent;
+        setNotepadStatus("Salvo na nuvem ✓");
+    }
+}
+
+async function loadUserNote() {
+    const textarea = document.getElementById("notepad-textarea");
+    if (!textarea) return;
+
+    if (!supabaseClient) {
+        textarea.value = localStorage.getItem("sandboxos_note_text") || "";
+        return;
+    }
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+
+    setNotepadStatus("Carregando nota...");
+
+    const { data, error } = await supabaseClient
+        .from('notes')
+        .select('content')
+        .eq('user_id', user.id)
+        .limit(1);
+
+    if (data && data.length > 0) {
+        textarea.value = data[0].content || "";
+        lastSavedContent = data[0].content || "";
+        setNotepadStatus("Salvo na nuvem ✓");
+    } else {
+        textarea.value = localStorage.getItem("sandboxos_note_text") || "";
+        setNotepadStatus("Pronto");
+    }
+}
 
 // --- 🕒 RELÓGIO & CALENDÁRIO ---
 function updateClockEngine() {
@@ -351,34 +470,79 @@ function initDesktopSelection() {
     });
 }
 
-// --- 🎨 WALLPAPERS ---
-function renderWallpaperHistory() {
+// --- 🎨 WALLPAPERS E PERSONALIZAÇÃO ---
+
+function setSolidWallpaper(color) {
+    const desktop = document.getElementById('desktop');
+    if (desktop) {
+        desktop.style.backgroundImage = 'none';
+        desktop.style.backgroundColor = color;
+        localStorage.setItem('sandbox_wallpaper', color);
+        localStorage.setItem('sandbox_wallpaper_type', 'color');
+    }
+}
+
+function setWallpaperFromUrl(imageUrl) {
+    const desktop = document.getElementById('desktop');
+    if (desktop) {
+        desktop.style.backgroundImage = `url('${imageUrl}')`;
+        desktop.style.backgroundSize = 'cover';
+        desktop.style.backgroundPosition = 'center';
+        localStorage.setItem('sandbox_wallpaper', imageUrl);
+        localStorage.setItem('sandbox_wallpaper_type', 'image');
+    }
+}
+
+async function renderWallpaperHistory() {
     const container = document.getElementById("wallpaper-history-grid");
     if (!container) return;
-    container.innerHTML = "";
+    container.innerHTML = "<p style='color:#aaa; font-size:11px;'>Buscando imagens...</p>";
 
-    const imagesInFolder = virtualFileSystem.imagens || [];
-
-    if (imagesInFolder.length === 0) {
-        container.innerHTML = "<p style='color:#999; font-size:12px; grid-column: 1 / -1;'>Nenhuma imagem local disponível.</p>";
+    if (!supabaseClient) {
+        container.innerHTML = "<p style='color:#999; font-size:11px;'>Supabase offline.</p>";
         return;
     }
 
-    imagesInFolder.forEach(function(file) {
-        if (file.type && file.type.startsWith("image/") && file.data) {
-            const bgData = "url('" + file.data + "')";
-            const ball = document.createElement("div");
-            ball.className = "color-ball";
-            ball.style.background = bgData;
-            ball.style.backgroundSize = "cover";
-            ball.title = file.name;
-            ball.onclick = function() { changeBackground(bgData); };
-            container.appendChild(ball);
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+        container.innerHTML = "<p style='color:#999; font-size:11px;'>Faça login para carregar wallpapers.</p>";
+        return;
+    }
+
+    const { data: files } = await supabaseClient.storage.from('meus-arquivos').list(user.id);
+    if (!files || files.length === 0) {
+        container.innerHTML = "<p style='color:#999; font-size:11px;'>Nenhuma imagem na nuvem.</p>";
+        return;
+    }
+
+    container.innerHTML = "";
+    files.forEach(file => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
+            const { data: publicUrlData } = supabaseClient.storage.from('meus-arquivos').getPublicUrl(`${user.id}/${file.name}`);
+            
+            const thumb = document.createElement("div");
+            thumb.className = "color-ball";
+            thumb.style.backgroundImage = `url('${publicUrlData.publicUrl}')`;
+            thumb.style.backgroundSize = "cover";
+            thumb.style.borderRadius = "4px";
+            thumb.style.width = "40px";
+            thumb.style.height = "40px";
+            thumb.style.cursor = "pointer";
+            thumb.title = "Clique para definir como papel de parede";
+            thumb.onclick = () => setWallpaperFromUrl(publicUrlData.publicUrl);
+
+            container.appendChild(thumb);
         }
     });
 }
 
-// --- 🖱️ DRAG & DROP ÍCONES (COM SUPORTE A SELEÇÃO MÚLTIPLA) ---
+function openFilesForWallpaper() {
+    openApp('files');
+    switchFolder('imagens');
+}
+
+// --- 🖱️ DRAG & DROP ÍCONES ---
 function makeShortcutDraggable(elmnt) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let isDragging = false;
@@ -461,7 +625,7 @@ function switchFolder(folderName) {
     carregarMeusArquivos();
 }
 
-// 1. Upload de Arquivo para a Nuvem
+// 1. Upload de Arquivo
 async function uploadArquivo(input) {
     const file = input.files[0];
     if (!file) return;
@@ -541,13 +705,20 @@ async function carregarMeusArquivos() {
             .getPublicUrl(`${user.id}/${file.name}`);
 
         const displayName = file.name.split('_').slice(1).join('_') || file.name;
+        const ext = file.name.split('.').pop().toLowerCase();
+        const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
 
         const fileItem = document.createElement('div');
-        fileItem.style.cssText = 'text-align: center; width: 90px; word-break: break-all; margin: 5px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);';
+        fileItem.style.cssText = 'text-align: center; width: 95px; word-break: break-all; margin: 5px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center;';
+
+        let wallpaperBtnHTML = isImage ? `<button onclick="setWallpaperFromUrl('${publicUrlData.publicUrl}')" style="background: #0078d7; border: none; color: white; border-radius: 3px; padding: 2px 4px; font-size: 9px; cursor: pointer; margin-top: 4px; width: 100%;">Usar Wallpaper</button>` : '';
 
         fileItem.innerHTML = `
-            <div style="font-size: 28px; cursor: pointer;" onclick="window.open('${publicUrlData.publicUrl}', '_blank')" title="Clique para abrir/baixar">📄</div>
-            <span style="font-size: 11px; display: block; margin-top: 4px; color: #eee; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${displayName}</span>
+            <div style="font-size: 28px; cursor: pointer;" onclick="window.open('${publicUrlData.publicUrl}', '_blank')" title="Clique para abrir">
+                ${isImage ? '🖼️' : '📄'}
+            </div>
+            <span style="font-size: 11px; display: block; margin-top: 4px; color: #eee; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; width: 100%;">${displayName}</span>
+            ${wallpaperBtnHTML}
             <button onclick="deletarArquivo('${file.name}')" style="background: none; border: none; color: #ff5555; cursor: pointer; font-size: 10px; margin-top: 4px;">Excluir</button>
         `;
 
@@ -574,11 +745,6 @@ async function deletarArquivo(fileName) {
     } else {
         carregarMeusArquivos();
     }
-}
-
-function saveNoteText() {
-    const textarea = document.getElementById("notepad-textarea");
-    if (textarea) localStorage.setItem("sandboxos_note_text", textarea.value);
 }
 
 // --- 🪟 JANELAS & TRAVA NAS BORDAS ---
@@ -777,28 +943,6 @@ function clearSystemData() {
     }
 }
 
-function changeBackground(colorOrType) {
-    applyBackgroundLogic(colorOrType);
-    localStorage.setItem("sandboxos_bg", colorOrType);
-    localStorage.setItem("sandbox_wallpaper", colorOrType.replace("url('", "").replace("')", ""));
-    localStorage.setItem("sandbox_wallpaper_type", colorOrType.startsWith("url") ? "image" : "color");
-}
-
-function applyBackgroundLogic(colorOrType) {
-    const desktop = document.getElementById('desktop');
-    if (!desktop) return;
-    if (colorOrType.startsWith("url(")) {
-        desktop.style.background = colorOrType + " no-repeat center center";
-        desktop.style.backgroundSize = "cover";
-    } else {
-        desktop.style.background = colorOrType;
-    }
-}
-
-// ==========================================
-// CONFIGURAÇÕES E PERSONALIZAÇÃO DE TELA
-// ==========================================
-
 function switchSettingsTab(tabName) {
     document.querySelectorAll('.settings-tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.settings-tab-content').forEach(content => content.classList.remove('active'));
@@ -808,26 +952,4 @@ function switchSettingsTab(tabName) {
 
     if (activeBtn) activeBtn.classList.add('active');
     if (activeContent) activeContent.classList.add('active');
-}
-
-function setSolidWallpaper(color) {
-    const desktop = document.getElementById('desktop');
-    if (desktop) {
-        desktop.style.backgroundImage = 'none';
-        desktop.style.backgroundColor = color;
-        localStorage.setItem('sandbox_wallpaper', color);
-        localStorage.setItem('sandbox_wallpaper_type', 'color');
-    }
-}
-
-function openFilesForWallpaper() {
-    if (typeof openApp === 'function') {
-        openApp('files');
-    } else if (typeof openAppFromStart === 'function') {
-        openAppFromStart('files');
-    }
-    
-    if (typeof switchFolder === 'function') {
-        switchFolder('imagens');
-    }
 }
