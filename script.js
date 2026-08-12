@@ -543,6 +543,7 @@ function openFilesForWallpaper() {
 }
 
 // --- 🖱️ DRAG & DROP ÍCONES ---
+// --- 🖱️ DRAG & DROP ÍCONES (COM PREVENÇÃO DE COLISÃO) ---
 function makeShortcutDraggable(elmnt) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let isDragging = false;
@@ -599,18 +600,66 @@ function makeShortcutDraggable(elmnt) {
         if (isDragging) {
             const selectedShortcuts = document.querySelectorAll('.draggable-shortcut.selected');
             selectedShortcuts.forEach(shortcut => {
+                // 1. Calcula a posição ideal encaixada na grade
                 let snappedLeft = Math.round((shortcut.offsetLeft - 10) / gridX) * gridX + 20;
                 let snappedTop = Math.round((shortcut.offsetTop - 10) / gridY) * gridY + 20;
 
                 const maxH = window.innerHeight - 130;
                 if (snappedTop > maxH) snappedTop = maxH;
 
-                shortcut.style.left = snappedLeft + "px"; 
-                shortcut.style.top = snappedTop + "px";
-                localStorage.setItem("pos_" + shortcut.id, JSON.stringify({ top: shortcut.style.top, left: shortcut.style.left }));
+                // 2. Resolve colisões buscando a próxima vaga livre
+                const freeSlot = findFreeGridSlot(shortcut, snappedLeft, snappedTop);
+
+                shortcut.style.left = freeSlot.left + "px"; 
+                shortcut.style.top = freeSlot.top + "px";
+
+                // 3. Salva a nova posição válida no localStorage
+                localStorage.setItem("pos_" + shortcut.id, JSON.stringify({ 
+                    top: shortcut.style.top, 
+                    left: shortcut.style.left 
+                }));
             });
         }
     }
+}
+
+// 📐 Função auxiliar para encontrar a vaga livre mais próxima (Anti-Colisão)
+function findFreeGridSlot(currentShortcut, targetLeft, targetTop) {
+    const allShortcuts = Array.from(document.querySelectorAll('.draggable-shortcut'));
+    const maxH = window.innerHeight - 130;
+    const maxW = window.innerWidth - 85;
+
+    let testLeft = targetLeft;
+    let testTop = targetTop;
+
+    // Função interna para testar se a posição (testLeft, testTop) já tem outro ícone
+    const isOccupied = (left, top) => {
+        return allShortcuts.some(s => {
+            if (s.id === currentShortcut.id) return false; // Ignora a si mesmo
+            
+            const sLeft = parseInt(s.style.left) || s.offsetLeft;
+            const sTop = parseInt(s.style.top) || s.offsetTop;
+
+            // Considera ocupado se a distância for menor que meia célula da grade
+            return Math.abs(sLeft - left) < (gridX / 2) && Math.abs(sTop - top) < (gridY / 2);
+        });
+    };
+
+    // Tenta a posição atual. Se estiver ocupada, desce na coluna; se estourar a tela, vai pra próxima coluna
+    while (isOccupied(testLeft, testTop)) {
+        testTop += gridY; // Move para a linha de baixo
+
+        if (testTop > maxH) { 
+            testTop = 20; // Volta para o topo
+            testLeft += gridX; // Move para a próxima coluna à direita
+        }
+
+        if (testLeft > maxW) {
+            testLeft = 20; // Proteção contra estouro de tela total
+        }
+    }
+
+    return { left: testLeft, top: testTop };
 }
 
 // ==========================================
