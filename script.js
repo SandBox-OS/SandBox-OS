@@ -332,6 +332,27 @@ async function loadUserNote() {
         setNotepadStatus("Pronto");
     }
 }
+async function loadUserNote() {
+    // (código da função loadUserNote que já está no seu arquivo)
+}
+
+// ⬇️ COLE A SUA NOVA FUNÇÃO AQUI ⬇️
+function createNewNoteShortcut() {
+    // Abre o aplicativo de Bloco de Notas
+    openApp('notepad');
+    
+    // Limpa o textarea para uma nova anotação
+    const textarea = document.getElementById("notepad-textarea");
+    if (textarea) {
+        textarea.value = "";
+        textarea.focus();
+    }
+    
+    setNotepadStatus("Nova nota criada");
+}
+
+// --- 🕒 RELÓGIO & CALENDÁRIO ---
+// (funções do relógio começam aqui)
 
 // --- 🕒 RELÓGIO & CALENDÁRIO ---
 function updateClockEngine() {
