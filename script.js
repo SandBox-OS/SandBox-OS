@@ -162,26 +162,22 @@ async function logoutUser() {
 function initializeOS() {
     checkUserSession();
 
-    // Restaurar Wallpaper / Plano de Fundo
+    // Restaurar Wallpaper / Plano de Fundo (Imagem, Cor ou Vídeo)
     const savedWallpaper = localStorage.getItem('sandbox_wallpaper');
     const wallpaperType = localStorage.getItem('sandbox_wallpaper_type');
-    const desktop = document.getElementById('desktop');
 
-    if (savedWallpaper && desktop) {
+    if (savedWallpaper) {
         if (wallpaperType === 'color') {
-            desktop.style.backgroundImage = 'none';
-            desktop.style.backgroundColor = savedWallpaper;
-        } else {
-            desktop.style.backgroundImage = `url('${savedWallpaper}')`;
-            desktop.style.backgroundSize = 'cover';
-            desktop.style.backgroundPosition = 'center';
+            setSolidWallpaper(savedWallpaper);
+        } else if (wallpaperType === 'video' || wallpaperType === 'image') {
+            setWallpaperFromUrl(savedWallpaper);
         }
     }
 
     // Inicializar Eventos do Bloco de Notas (Debounce + Blur)
     initNotepadEvents();
-
     renderWallpaperHistory();
+    initContextMenu();
 
     document.querySelectorAll('.draggable-shortcut').forEach(function(shortcut) {
         const coords = localStorage.getItem("pos_" + shortcut.id);
@@ -218,18 +214,15 @@ function initNotepadEvents() {
     const textarea = document.getElementById("notepad-textarea");
     if (!textarea) return;
 
-    // 1. Ao digitar, ativa o timer de Debounce
     textarea.addEventListener("input", () => {
         setNotepadStatus("Digitando...");
         if (notepadSaveTimeout) clearTimeout(notepadSaveTimeout);
 
-        // Aguarda 1.5s de inatividade antes de salvar
         notepadSaveTimeout = setTimeout(() => {
             saveNoteToCloud();
         }, 1500);
     });
 
-    // 2. Ao perder o foco (blur), salva imediatamente
     textarea.addEventListener("blur", () => {
         if (notepadSaveTimeout) clearTimeout(notepadSaveTimeout);
         saveNoteToCloud();
@@ -247,13 +240,11 @@ async function saveNoteToCloud() {
 
     const currentContent = textarea.value;
 
-    // Evita requisições desnecessárias se nada mudou
     if (currentContent === lastSavedContent) {
         setNotepadStatus("Salvo na nuvem ✓");
         return;
     }
 
-    // Salva localmente como backup rápido
     localStorage.setItem("sandboxos_note_text", currentContent);
 
     if (!supabaseClient) {
@@ -270,7 +261,6 @@ async function saveNoteToCloud() {
 
     setNotepadStatus("Salvando na nuvem...");
 
-    // Verifica se já existe uma nota do usuário
     const { data: existingNotes } = await supabaseClient
         .from('notes')
         .select('id')
@@ -280,14 +270,12 @@ async function saveNoteToCloud() {
     let error = null;
 
     if (existingNotes && existingNotes.length > 0) {
-        // Atualiza nota existente
         const { error: updateErr } = await supabaseClient
             .from('notes')
             .update({ content: currentContent, updated_at: new Date() })
             .eq('id', existingNotes[0].id);
         error = updateErr;
     } else {
-        // Cria nova nota
         const { error: insertErr } = await supabaseClient
             .from('notes')
             .insert([{ user_id: user.id, title: 'Minhas Anotações', content: currentContent }]);
@@ -332,27 +320,16 @@ async function loadUserNote() {
         setNotepadStatus("Pronto");
     }
 }
-async function loadUserNote() {
-    // (código da função loadUserNote que já está no seu arquivo)
-}
 
-// ⬇️ COLE A SUA NOVA FUNÇÃO AQUI ⬇️
 function createNewNoteShortcut() {
-    // Abre o aplicativo de Bloco de Notas
     openApp('notepad');
-    
-    // Limpa o textarea para uma nova anotação
     const textarea = document.getElementById("notepad-textarea");
     if (textarea) {
         textarea.value = "";
         textarea.focus();
     }
-    
     setNotepadStatus("Nova nota criada");
 }
-
-// --- 🕒 RELÓGIO & CALENDÁRIO ---
-// (funções do relógio começam aqui)
 
 // --- 🕒 RELÓGIO & CALENDÁRIO ---
 function updateClockEngine() {
@@ -437,6 +414,36 @@ function filterStartMenuApps(query) {
     });
 }
 
+// --- 🖱️ MENU DE CONTEXTO (BOTÃO DIREITO NO DESKTOP) ---
+function initContextMenu() {
+    const desktop = document.getElementById('desktop');
+    const contextMenu = document.getElementById('context-menu');
+
+    if (!desktop || !contextMenu) return;
+
+    desktop.addEventListener('contextmenu', (e) => {
+        if (e.target !== desktop) return;
+
+        e.preventDefault();
+
+        let posX = e.clientX;
+        let posY = e.clientY;
+
+        const menuWidth = 180;
+        const menuHeight = 120;
+        if (posX + menuWidth > window.innerWidth) posX = window.innerWidth - menuWidth;
+        if (posY + menuHeight > window.innerHeight) posY = window.innerHeight - menuHeight;
+
+        contextMenu.style.left = `${posX}px`;
+        contextMenu.style.top = `${posY}px`;
+        contextMenu.style.display = 'block';
+    });
+
+    document.addEventListener('click', () => {
+        contextMenu.style.display = 'none';
+    });
+}
+
 // --- 🖱️ SELEÇÃO MÚLTIPLA NO DESKTOP ---
 function initDesktopSelection() {
     const desktop = document.getElementById('desktop');
@@ -491,33 +498,59 @@ function initDesktopSelection() {
     });
 }
 
-// --- 🎨 WALLPAPERS E PERSONALIZAÇÃO ---
+// --- 🎨 WALLPAPERS E PERSONALIZAÇÃO (COM VÍDEOS) ---
 
-function setSolidWallpaper(color) {
+function setWallpaperFromUrl(url) {
     const desktop = document.getElementById('desktop');
-    if (desktop) {
+    const videoBg = document.getElementById('desktop-video-wallpaper');
+    if (!desktop || !videoBg) return;
+
+    const ext = url.split('.').pop().toLowerCase();
+    const isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
+
+    if (isVideo) {
+        videoBg.src = url;
+        videoBg.style.display = 'block';
+        videoBg.play().catch(err => console.log("Erro no autoplay do vídeo:", err));
         desktop.style.backgroundImage = 'none';
-        desktop.style.backgroundColor = color;
-        localStorage.setItem('sandbox_wallpaper', color);
-        localStorage.setItem('sandbox_wallpaper_type', 'color');
+
+        localStorage.setItem('sandbox_wallpaper', url);
+        localStorage.setItem('sandbox_wallpaper_type', 'video');
+    } else {
+        videoBg.pause();
+        videoBg.style.display = 'none';
+        videoBg.src = "";
+
+        desktop.style.backgroundImage = `url('${url}')`;
+        desktop.style.backgroundSize = 'cover';
+        desktop.style.backgroundPosition = 'center';
+
+        localStorage.setItem('sandbox_wallpaper', url);
+        localStorage.setItem('sandbox_wallpaper_type', 'image');
     }
 }
 
-function setWallpaperFromUrl(imageUrl) {
+function setSolidWallpaper(color) {
     const desktop = document.getElementById('desktop');
-    if (desktop) {
-        desktop.style.backgroundImage = `url('${imageUrl}')`;
-        desktop.style.backgroundSize = 'cover';
-        desktop.style.backgroundPosition = 'center';
-        localStorage.setItem('sandbox_wallpaper', imageUrl);
-        localStorage.setItem('sandbox_wallpaper_type', 'image');
+    const videoBg = document.getElementById('desktop-video-wallpaper');
+
+    if (desktop && videoBg) {
+        videoBg.pause();
+        videoBg.style.display = 'none';
+        videoBg.src = "";
+
+        desktop.style.backgroundImage = 'none';
+        desktop.style.backgroundColor = color;
+
+        localStorage.setItem('sandbox_wallpaper', color);
+        localStorage.setItem('sandbox_wallpaper_type', 'color');
     }
 }
 
 async function renderWallpaperHistory() {
     const container = document.getElementById("wallpaper-history-grid");
     if (!container) return;
-    container.innerHTML = "<p style='color:#aaa; font-size:11px;'>Buscando imagens...</p>";
+    container.innerHTML = "<p style='color:#aaa; font-size:11px;'>Buscando mídias...</p>";
 
     if (!supabaseClient) {
         container.innerHTML = "<p style='color:#999; font-size:11px;'>Supabase offline.</p>";
@@ -526,33 +559,46 @@ async function renderWallpaperHistory() {
 
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
-        container.innerHTML = "<p style='color:#999; font-size:11px;'>Faça login para carregar wallpapers.</p>";
+        container.innerHTML = "<p style='color:#999; font-size:11px;'>Faça login para carregar mídias.</p>";
         return;
     }
 
     const { data: files } = await supabaseClient.storage.from('meus-arquivos').list(user.id);
     if (!files || files.length === 0) {
-        container.innerHTML = "<p style='color:#999; font-size:11px;'>Nenhuma imagem na nuvem.</p>";
+        container.innerHTML = "<p style='color:#999; font-size:11px;'>Nenhuma mídia na nuvem.</p>";
         return;
     }
 
     container.innerHTML = "";
     files.forEach(file => {
         const ext = file.name.split('.').pop().toLowerCase();
-        if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
+        const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
+        const isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
+
+        if (isImage || isVideo) {
             const { data: publicUrlData } = supabaseClient.storage.from('meus-arquivos').getPublicUrl(`${user.id}/${file.name}`);
             
             const thumb = document.createElement("div");
             thumb.className = "color-ball";
-            thumb.style.backgroundImage = `url('${publicUrlData.publicUrl}')`;
-            thumb.style.backgroundSize = "cover";
             thumb.style.borderRadius = "4px";
-            thumb.style.width = "40px";
-            thumb.style.height = "40px";
+            thumb.style.width = "48px";
+            thumb.style.height = "48px";
             thumb.style.cursor = "pointer";
-            thumb.title = "Clique para definir como papel de parede";
-            thumb.onclick = () => setWallpaperFromUrl(publicUrlData.publicUrl);
+            thumb.style.display = "flex";
+            thumb.style.alignItems = "center";
+            thumb.style.justifyContent = "center";
+            thumb.style.border = "1px solid rgba(255,255,255,0.2)";
+            thumb.title = `Definir ${isVideo ? 'Vídeo' : 'Imagem'} como Wallpaper`;
 
+            if (isImage) {
+                thumb.style.backgroundImage = `url('${publicUrlData.publicUrl}')`;
+                thumb.style.backgroundSize = "cover";
+            } else if (isVideo) {
+                thumb.style.background = "#222";
+                thumb.innerHTML = "🎥";
+            }
+
+            thumb.onclick = () => setWallpaperFromUrl(publicUrlData.publicUrl);
             container.appendChild(thumb);
         }
     });
@@ -563,7 +609,6 @@ function openFilesForWallpaper() {
     switchFolder('imagens');
 }
 
-// --- 🖱️ DRAG & DROP ÍCONES ---
 // --- 🖱️ DRAG & DROP ÍCONES (COM PREVENÇÃO DE COLISÃO) ---
 function makeShortcutDraggable(elmnt) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
@@ -621,20 +666,17 @@ function makeShortcutDraggable(elmnt) {
         if (isDragging) {
             const selectedShortcuts = document.querySelectorAll('.draggable-shortcut.selected');
             selectedShortcuts.forEach(shortcut => {
-                // 1. Calcula a posição ideal encaixada na grade
                 let snappedLeft = Math.round((shortcut.offsetLeft - 10) / gridX) * gridX + 20;
                 let snappedTop = Math.round((shortcut.offsetTop - 10) / gridY) * gridY + 20;
 
                 const maxH = window.innerHeight - 130;
                 if (snappedTop > maxH) snappedTop = maxH;
 
-                // 2. Resolve colisões buscando a próxima vaga livre
                 const freeSlot = findFreeGridSlot(shortcut, snappedLeft, snappedTop);
 
                 shortcut.style.left = freeSlot.left + "px"; 
                 shortcut.style.top = freeSlot.top + "px";
 
-                // 3. Salva a nova posição válida no localStorage
                 localStorage.setItem("pos_" + shortcut.id, JSON.stringify({ 
                     top: shortcut.style.top, 
                     left: shortcut.style.left 
@@ -644,7 +686,6 @@ function makeShortcutDraggable(elmnt) {
     }
 }
 
-// 📐 Função auxiliar para encontrar a vaga livre mais próxima (Anti-Colisão)
 function findFreeGridSlot(currentShortcut, targetLeft, targetTop) {
     const allShortcuts = Array.from(document.querySelectorAll('.draggable-shortcut'));
     const maxH = window.innerHeight - 130;
@@ -653,30 +694,27 @@ function findFreeGridSlot(currentShortcut, targetLeft, targetTop) {
     let testLeft = targetLeft;
     let testTop = targetTop;
 
-    // Função interna para testar se a posição (testLeft, testTop) já tem outro ícone
     const isOccupied = (left, top) => {
         return allShortcuts.some(s => {
-            if (s.id === currentShortcut.id) return false; // Ignora a si mesmo
+            if (s.id === currentShortcut.id) return false;
             
             const sLeft = parseInt(s.style.left) || s.offsetLeft;
             const sTop = parseInt(s.style.top) || s.offsetTop;
 
-            // Considera ocupado se a distância for menor que meia célula da grade
             return Math.abs(sLeft - left) < (gridX / 2) && Math.abs(sTop - top) < (gridY / 2);
         });
     };
 
-    // Tenta a posição atual. Se estiver ocupada, desce na coluna; se estourar a tela, vai pra próxima coluna
     while (isOccupied(testLeft, testTop)) {
-        testTop += gridY; // Move para a linha de baixo
+        testTop += gridY;
 
         if (testTop > maxH) { 
-            testTop = 20; // Volta para o topo
-            testLeft += gridX; // Move para a próxima coluna à direita
+            testTop = 20; 
+            testLeft += gridX; 
         }
 
         if (testLeft > maxW) {
-            testLeft = 20; // Proteção contra estouro de tela total
+            testLeft = 20; 
         }
     }
 
@@ -695,7 +733,6 @@ function switchFolder(folderName) {
     carregarMeusArquivos();
 }
 
-// 1. Upload de Arquivo
 async function uploadArquivo(input) {
     const file = input.files[0];
     if (!file) return;
@@ -732,7 +769,6 @@ async function uploadArquivo(input) {
     carregarMeusArquivos();
 }
 
-// 2. Carregar e Renderizar Arquivos do Supabase
 async function carregarMeusArquivos() {
     const container = document.getElementById("file-list-container");
     if (!container) return;
@@ -777,15 +813,16 @@ async function carregarMeusArquivos() {
         const displayName = file.name.split('_').slice(1).join('_') || file.name;
         const ext = file.name.split('.').pop().toLowerCase();
         const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
+        const isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
 
         const fileItem = document.createElement('div');
         fileItem.style.cssText = 'text-align: center; width: 95px; word-break: break-all; margin: 5px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center;';
 
-        let wallpaperBtnHTML = isImage ? `<button onclick="setWallpaperFromUrl('${publicUrlData.publicUrl}')" style="background: #0078d7; border: none; color: white; border-radius: 3px; padding: 2px 4px; font-size: 9px; cursor: pointer; margin-top: 4px; width: 100%;">Usar Wallpaper</button>` : '';
+        let wallpaperBtnHTML = (isImage || isVideo) ? `<button onclick="setWallpaperFromUrl('${publicUrlData.publicUrl}')" style="background: #0078d7; border: none; color: white; border-radius: 3px; padding: 2px 4px; font-size: 9px; cursor: pointer; margin-top: 4px; width: 100%;">Usar Wallpaper</button>` : '';
 
         fileItem.innerHTML = `
             <div style="font-size: 28px; cursor: pointer;" onclick="window.open('${publicUrlData.publicUrl}', '_blank')" title="Clique para abrir">
-                ${isImage ? '🖼️' : '📄'}
+                ${isImage ? '🖼️' : isVideo ? '🎥' : '📄'}
             </div>
             <span style="font-size: 11px; display: block; margin-top: 4px; color: #eee; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; width: 100%;">${displayName}</span>
             ${wallpaperBtnHTML}
@@ -796,7 +833,6 @@ async function carregarMeusArquivos() {
     });
 }
 
-// 3. Excluir Arquivo da Nuvem
 async function deletarArquivo(fileName) {
     if (!confirm("Tem certeza que deseja excluir este arquivo?")) return;
 
@@ -1023,42 +1059,3 @@ function switchSettingsTab(tabName) {
     if (activeBtn) activeBtn.classList.add('active');
     if (activeContent) activeContent.classList.add('active');
 }
-// --- 🖱️ MENU DE CONTEXTO (BOTÃO DIREITO NO DESKTOP) ---
-function initContextMenu() {
-    const desktop = document.getElementById('desktop');
-    const contextMenu = document.getElementById('context-menu');
-
-    if (!desktop || !contextMenu) return;
-
-    // Bloqueia o menu padrão do Chrome e abre o menu do OS
-    desktop.addEventListener('contextmenu', (e) => {
-        // Se clicar em um ícone ou janela, deixa o evento padrão ou trata individualmente
-        if (e.target !== desktop) return;
-
-        e.preventDefault(); // Impede o menu do Chrome de aparecer!
-
-        // Posiciona o menu onde o mouse foi clicado
-        let posX = e.clientX;
-        let posY = e.clientY;
-
-        // Ajuste para não sair da tela
-        const menuWidth = 180;
-        const menuHeight = 120;
-        if (posX + menuWidth > window.innerWidth) posX = window.innerWidth - menuWidth;
-        if (posY + menuHeight > window.innerHeight) posY = window.innerHeight - menuHeight;
-
-        contextMenu.style.left = `${posX}px`;
-        contextMenu.style.top = `${posY}px`;
-        contextMenu.style.display = 'block';
-    });
-
-    // Fecha o menu ao clicar em qualquer lugar da tela
-    document.addEventListener('click', () => {
-        contextMenu.style.display = 'none';
-    });
-}
-
-// Chame a função quando a página carregar
-document.addEventListener("DOMContentLoaded", () => {
-    initContextMenu();
-});
