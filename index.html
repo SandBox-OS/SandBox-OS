@@ -247,6 +247,17 @@
         </div>
     </div>
 
+    <!-- MENU DE CONTEXTO DO DESKTOP -->
+    <div id="context-menu" class="context-menu" style="display: none; position: absolute; z-index: 999999;">
+        <ul>
+            <li onclick="createNewNoteShortcut()">📝 Novo Bloco de Notas</li>
+            <li onclick="openApp('settings')">⚙️ Personalizar Tela</li>
+            <li onclick="carregarMeusArquivos()">🔄 Atualizar Arquivos</li>
+            <hr>
+            <li onclick="clearSystemData()">⚠️ Redefinir Sistema</li>
+        </ul>
+    </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
