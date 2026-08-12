@@ -136,17 +136,21 @@
             </div>
         </div>
         <div class="window-body">
-            <div class="file-manager">
-                <div class="file-manager-sidebar">
+            <div class="file-manager" style="display: flex; height: 100%;">
+                <div class="file-manager-sidebar" style="width: 130px; display: flex; flex-direction: column; gap: 8px; padding-right: 10px; border-right: 1px solid #333;">
                     <button id="folder-btn-downloads" class="active" onclick="switchFolder('downloads')">Downloads</button>
                     <button id="folder-btn-imagens" onclick="switchFolder('imagens')">Imagens</button>
                     <button id="folder-btn-videos" onclick="switchFolder('videos')">Vídeos</button>
-                    <label style="margin-top: auto; background: #0078d7; padding: 6px; text-align: center; border-radius: 4px; font-size: 11px; cursor: pointer;">
-                        Enviar Arquivo
-                        <input type="file" style="display: none;" onchange="handleFileUpload(event)">
+                    
+                    <label style="margin-top: auto; background: #0078d7; padding: 8px; text-align: center; border-radius: 4px; font-size: 11px; cursor: pointer; color: white;">
+                        📤 Enviar Arquivo
+                        <input type="file" id="file-input-upload" style="display: none;" onchange="uploadArquivo(this)">
                     </label>
                 </div>
-                <div class="file-manager-content" id="file-list-container"></div>
+                
+                <div class="file-manager-content" id="file-list-container" style="flex: 1; padding-left: 10px; display: flex; flex-wrap: wrap; gap: 10px; overflow-y: auto;">
+                    <p style="color: #888; font-size: 12px;">Carregando arquivos da nuvem...</p>
+                </div>
             </div>
         </div>
         <div class="window-resize-handle"></div>
