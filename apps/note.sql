@@ -1,4 +1,4 @@
--- Arquivo: apps/notas.sql
+-- Arquivo: apps/note.sql
 
 CREATE TABLE IF NOT EXISTS notes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -7,8 +7,9 @@ CREATE TABLE IF NOT EXISTS notes (
     content TEXT DEFAULT '',
     is_archived BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Índice para agilizar a busca de notas por usuário
 CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes(user_id);
