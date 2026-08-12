@@ -9,6 +9,48 @@ if (typeof supabase !== 'undefined' && SUPABASE_URL !== 'SUA_SUPABASE_URL_AQUI')
     supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
+// ==========================================
+// WALLPAPERS PADRÃO DO SISTEMA (PROTEGIDOS / ASSETS)
+// ==========================================
+const DEFAULT_WALLPAPERS = [
+    {
+        id: 'default_1',
+        name: 'Montanhas Nevada',
+        url: 'assets/wallpapers/Montanhas Nevada.png',
+        isDefault: true
+    },
+    {
+        id: 'default_2',
+        name: 'Dia de Praia',
+        url: 'assets/wallpapers/Dia de Praia.png',
+        isDefault: true
+    },
+    {
+        id: 'default_3',
+        name: 'Futuro Distópico',
+        url: 'assets/wallpapers/Futuro Destopico.png',
+        isDefault: true
+    },
+    {
+        id: 'default_4',
+        name: 'Noite no Japão',
+        url: 'assets/wallpapers/Noite no Japao.png',
+        isDefault: true
+    },
+    {
+        id: 'default_5',
+        name: 'Campos de Trigo',
+        url: 'assets/wallpapers/Campos de Trigo.png',
+        isDefault: true
+    },
+    {
+        id: 'default_6',
+        name: 'Vista Para Cidade',
+        url: 'assets/wallpapers/Vista Para Cidade.png',
+        isDefault: true
+    }
+];
+
 let isSignUpMode = true; // Alterna entre Criar Conta (true) e Fazer Login (false)
 
 let highestZIndex = 10;
@@ -163,19 +205,19 @@ function initializeOS() {
     checkUserSession();
 
     // Restaurar Wallpaper / Plano de Fundo (Imagem, Cor ou Vídeo)
-    const savedWallpaper = localStorage.getItem('sandbox_wallpaper');
-    const wallpaperType = localStorage.getItem('sandbox_wallpaper_type');
+    // Se não houver nenhum salvo, define "Montanhas Nevada.png" como padrão inicial do sistema
+    const savedWallpaper = localStorage.getItem('sandbox_wallpaper') || DEFAULT_WALLPAPERS[0].url;
+    const wallpaperType = localStorage.getItem('sandbox_wallpaper_type') || 'image';
 
-    if (savedWallpaper) {
-        if (wallpaperType === 'color') {
-            setSolidWallpaper(savedWallpaper);
-        } else if (wallpaperType === 'video' || wallpaperType === 'image') {
-            setWallpaperFromUrl(savedWallpaper);
-        }
+    if (wallpaperType === 'color') {
+        setSolidWallpaper(savedWallpaper);
+    } else {
+        setWallpaperFromUrl(savedWallpaper);
     }
 
     // Inicializar Eventos do Bloco de Notas (Debounce + Blur)
     initNotepadEvents();
+    renderDefaultWallpapers();
     renderWallpaperHistory();
     initContextMenu();
 
@@ -519,7 +561,7 @@ function initDesktopSelection() {
     });
 }
 
-// --- 🎨 WALLPAPERS E PERSONALIZAÇÃO (COM VÍDEOS) ---
+// --- 🎨 WALLPAPERS E PERSONALIZAÇÃO (COM VÍDEOS & PADRÕES) ---
 
 function setWallpaperFromUrl(url) {
     const desktop = document.getElementById('desktop');
@@ -583,6 +625,32 @@ function setSolidWallpaper(color) {
         localStorage.setItem('sandbox_wallpaper', color);
         localStorage.setItem('sandbox_wallpaper_type', 'color');
     }
+}
+
+function renderDefaultWallpapers() {
+    const container = document.getElementById("default-wallpaper-grid") || document.getElementById("wallpaper-default-grid");
+    if (!container) return;
+
+    container.innerHTML = "";
+    DEFAULT_WALLPAPERS.forEach(wp => {
+        const thumb = document.createElement("div");
+        thumb.className = "color-ball";
+        thumb.style.borderRadius = "4px";
+        thumb.style.width = "48px";
+        thumb.style.height = "48px";
+        thumb.style.cursor = "pointer";
+        thumb.style.display = "flex";
+        thumb.style.alignItems = "center";
+        thumb.style.justifyContent = "center";
+        thumb.style.border = "1px solid rgba(255,255,255,0.2)";
+        thumb.style.backgroundImage = `url('${wp.url}')`;
+        thumb.style.backgroundSize = "cover";
+        thumb.style.backgroundPosition = "center";
+        thumb.title = `Wallpaper Padrão: ${wp.name} (Protegido 🔒)`;
+
+        thumb.onclick = () => setWallpaperFromUrl(wp.url);
+        container.appendChild(thumb);
+    });
 }
 
 async function renderWallpaperHistory() {
@@ -902,7 +970,10 @@ function openApp(appId) {
             updateTaskbar();
         }
         if (appId === 'files') carregarMeusArquivos();
-        if (appId === 'settings') renderWallpaperHistory();
+        if (appId === 'settings') {
+            renderDefaultWallpapers();
+            renderWallpaperHistory();
+        }
     }
 }
 
