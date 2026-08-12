@@ -208,6 +208,27 @@ function initializeOS() {
 
 document.addEventListener("DOMContentLoaded", initializeOS);
 
+// --- 🧮 CALCULADORA ---
+function appendToCalc(val) {
+    const display = document.getElementById('calc-display');
+    if (!display) return;
+
+    if (display.value === '0' || display.value === 'Erro') {
+        if (['+', '-', '*', '/'].includes(val)) return;
+        display.value = '';
+    }
+
+    const lastChar = display.value.slice(-1);
+    const operators = ['+', '-', '*', '/'];
+
+    if (operators.includes(val) && operators.includes(lastChar)) {
+        display.value = display.value.slice(0, -1) + val;
+        return;
+    }
+
+    display.value += val;
+}
+
 // --- 📝 BLOCO DE NOTAS (DEBOUNCE + BANCO DE DADOS) ---
 
 function initNotepadEvents() {
@@ -503,23 +524,40 @@ function initDesktopSelection() {
 function setWallpaperFromUrl(url) {
     const desktop = document.getElementById('desktop');
     const videoBg = document.getElementById('desktop-video-wallpaper');
-    if (!desktop || !videoBg) return;
+    if (!desktop) return;
 
-    const ext = url.split('.').pop().toLowerCase();
+    const cleanUrl = url.split('?')[0];
+    const ext = cleanUrl.split('.').pop().toLowerCase();
     const isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
 
-    if (isVideo) {
+    if (isVideo && videoBg) {
+        videoBg.muted = true;
+        videoBg.volume = 0;
         videoBg.src = url;
+
         videoBg.style.display = 'block';
-        videoBg.play().catch(err => console.log("Erro no autoplay do vídeo:", err));
+        videoBg.style.position = 'absolute';
+        videoBg.style.top = '0';
+        videoBg.style.left = '0';
+        videoBg.style.width = '100%';
+        videoBg.style.height = '100%';
+        videoBg.style.objectFit = 'cover';
+        videoBg.style.zIndex = '0';
+
+        videoBg.play().catch(err => {
+            console.warn("Autoplay de vídeo impedido pelo navegador:", err);
+        });
+
         desktop.style.backgroundImage = 'none';
 
         localStorage.setItem('sandbox_wallpaper', url);
         localStorage.setItem('sandbox_wallpaper_type', 'video');
     } else {
-        videoBg.pause();
-        videoBg.style.display = 'none';
-        videoBg.src = "";
+        if (videoBg) {
+            videoBg.pause();
+            videoBg.style.display = 'none';
+            videoBg.src = "";
+        }
 
         desktop.style.backgroundImage = `url('${url}')`;
         desktop.style.backgroundSize = 'cover';
