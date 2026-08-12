@@ -195,7 +195,7 @@
     </div>
 
     <!-- Configurações -->
-    <div class="window" id="win-settings" style="top: 120px; left: 220px; width: 480px; height: 350px;">
+    <div class="window" id="win-settings" style="top: 120px; left: 220px; width: 480px; height: 380px;">
         <div class="window-header" id="win-settings-header">
             <span>⚙️ Configurações</span>
             <div class="window-controls">
@@ -210,19 +210,29 @@
                     <button class="settings-tab-btn active" onclick="switchSettingsTab('personalizacao')">Personalização</button>
                     <button class="settings-tab-btn" onclick="switchSettingsTab('sistema')">Sistema</button>
                 </div>
-                <div class="settings-content">
+                <div class="settings-content" style="overflow-y: auto;">
                     <div id="settings-tab-personalizacao" class="settings-tab-content active">
                         <h3>Plano de Fundo</h3>
-                        <p style="font-size: 11px; color: #aaa; margin-bottom: 10px;">Escolha uma cor ou imagem do seu sistema</p>
+                        <p style="font-size: 11px; color: #aaa; margin-bottom: 10px;">Escolha uma cor, imagem padrão do sistema ou envie a sua</p>
+                        
+                        <!-- Cores Sólidas -->
                         <div style="display: flex; gap: 8px; margin-bottom: 15px;">
                             <div class="color-ball" style="background: #1b1b1b;" onclick="setSolidWallpaper('#1b1b1b')"></div>
                             <div class="color-ball" style="background: #0078d7;" onclick="setSolidWallpaper('#0078d7')"></div>
                             <div class="color-ball" style="background: #2d89ef;" onclick="setSolidWallpaper('#2d89ef')"></div>
                             <div class="color-ball" style="background: #00a4ef;" onclick="setSolidWallpaper('#00a4ef')"></div>
                         </div>
-                        <button onclick="openFilesForWallpaper()" style="padding: 6px 12px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 12px;">Escolher das Imagens</button>
-                        <div id="wallpaper-history-grid"></div>
+
+                        <!-- Wallpapers Padrão do Sistema (Assets) -->
+                        <h4 style="font-size: 12px; margin-bottom: 6px; color: #eee;">Padrões do Sistema</h4>
+                        <div id="default-wallpaper-grid" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;"></div>
+
+                        <!-- Wallpapers da Nuvem do Usuário -->
+                        <h4 style="font-size: 12px; margin-bottom: 6px; color: #eee;">Seus Arquivos na Nuvem</h4>
+                        <button onclick="openFilesForWallpaper()" style="padding: 6px 12px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 12px; margin-bottom: 10px;">Escolher das Imagens</button>
+                        <div id="wallpaper-history-grid" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
                     </div>
+                    
                     <div id="settings-tab-sistema" class="settings-tab-content">
                         <h3>Sobre o Sistema</h3>
                         <p style="font-size: 12px; color: #ccc; margin-top: 10px;">Web OS Sandbox v2.0</p>
