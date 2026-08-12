@@ -1002,3 +1002,42 @@ function switchSettingsTab(tabName) {
     if (activeBtn) activeBtn.classList.add('active');
     if (activeContent) activeContent.classList.add('active');
 }
+// --- 🖱️ MENU DE CONTEXTO (BOTÃO DIREITO NO DESKTOP) ---
+function initContextMenu() {
+    const desktop = document.getElementById('desktop');
+    const contextMenu = document.getElementById('context-menu');
+
+    if (!desktop || !contextMenu) return;
+
+    // Bloqueia o menu padrão do Chrome e abre o menu do OS
+    desktop.addEventListener('contextmenu', (e) => {
+        // Se clicar em um ícone ou janela, deixa o evento padrão ou trata individualmente
+        if (e.target !== desktop) return;
+
+        e.preventDefault(); // Impede o menu do Chrome de aparecer!
+
+        // Posiciona o menu onde o mouse foi clicado
+        let posX = e.clientX;
+        let posY = e.clientY;
+
+        // Ajuste para não sair da tela
+        const menuWidth = 180;
+        const menuHeight = 120;
+        if (posX + menuWidth > window.innerWidth) posX = window.innerWidth - menuWidth;
+        if (posY + menuHeight > window.innerHeight) posY = window.innerHeight - menuHeight;
+
+        contextMenu.style.left = `${posX}px`;
+        contextMenu.style.top = `${posY}px`;
+        contextMenu.style.display = 'block';
+    });
+
+    // Fecha o menu ao clicar em qualquer lugar da tela
+    document.addEventListener('click', () => {
+        contextMenu.style.display = 'none';
+    });
+}
+
+// Chame a função quando a página carregar
+document.addEventListener("DOMContentLoaded", () => {
+    initContextMenu();
+});
