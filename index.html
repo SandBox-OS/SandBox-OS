@@ -48,6 +48,9 @@
 
     <!-- Área de Trabalho -->
     <div id="desktop">
+        <!-- Elemento de Vídeo para Wallpapers Animados -->
+        <video id="desktop-video-wallpaper" autoplay loop muted playsinline style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none;"></video>
+
         <!-- Caixa de Seleção Azul -->
         <div id="selection-box"></div>
 
@@ -120,7 +123,6 @@
             </div>
         </div>
         <div class="window-body" style="display: flex; flex-direction: column;">
-            <!-- Status de sincronização com debounce -->
             <div id="notepad-status" style="font-size: 10px; color: #888; background: #111; padding: 2px 8px; text-align: right;">Pronto</div>
             <textarea id="notepad-textarea" style="width: 100%; flex: 1; background: #1a1a1a; color: white; border: none; padding: 10px; resize: none; outline: none;"></textarea>
         </div>
@@ -170,23 +172,23 @@
         <div class="window-body" style="padding: 10px; display: flex; flex-direction: column; gap: 8px;">
             <input type="text" id="calc-display" readonly style="width: 100%; height: 40px; background: #111; border: 1px solid #444; color: white; text-align: right; font-size: 18px; padding: 5px;" value="0">
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; flex: 1;">
-                <button onclick="document.getElementById('calc-display').value = ''" style="grid-column: span 2;">C</button>
-                <button onclick="document.getElementById('calc-display').value += '/'">/</button>
-                <button onclick="document.getElementById('calc-display').value += '*'">*</button>
-                <button onclick="document.getElementById('calc-display').value += '7'">7</button>
-                <button onclick="document.getElementById('calc-display').value += '8'">8</button>
-                <button onclick="document.getElementById('calc-display').value += '9'">9</button>
-                <button onclick="document.getElementById('calc-display').value += '-'">-</button>
-                <button onclick="document.getElementById('calc-display').value += '4'">4</button>
-                <button onclick="document.getElementById('calc-display').value += '5'">5</button>
-                <button onclick="document.getElementById('calc-display').value += '6'">6</button>
-                <button onclick="document.getElementById('calc-display').value += '+'">+</button>
-                <button onclick="document.getElementById('calc-display').value += '1'">1</button>
-                <button onclick="document.getElementById('calc-display').value += '2'">2</button>
-                <button onclick="document.getElementById('calc-display').value += '3'">3</button>
+                <button onclick="document.getElementById('calc-display').value = '0'" style="grid-column: span 2;">C</button>
+                <button onclick="appendToCalc('/')">/</button>
+                <button onclick="appendToCalc('*')">*</button>
+                <button onclick="appendToCalc('7')">7</button>
+                <button onclick="appendToCalc('8')">8</button>
+                <button onclick="appendToCalc('9')">9</button>
+                <button onclick="appendToCalc('-')">-</button>
+                <button onclick="appendToCalc('4')">4</button>
+                <button onclick="appendToCalc('5')">5</button>
+                <button onclick="appendToCalc('6')">6</button>
+                <button onclick="appendToCalc('+')">+</button>
+                <button onclick="appendToCalc('1')">1</button>
+                <button onclick="appendToCalc('2')">2</button>
+                <button onclick="appendToCalc('3')">3</button>
                 <button onclick="try { document.getElementById('calc-display').value = eval(document.getElementById('calc-display').value) } catch { document.getElementById('calc-display').value = 'Erro' }" style="grid-row: span 2; background: #0078d7; color: white;">=</button>
-                <button onclick="document.getElementById('calc-display').value += '0'" style="grid-column: span 2;">0</button>
-                <button onclick="document.getElementById('calc-display').value += '.'">.</button>
+                <button onclick="appendToCalc('0')" style="grid-column: span 2;">0</button>
+                <button onclick="appendToCalc('.')">.</button>
             </div>
         </div>
         <div class="window-resize-handle"></div>
