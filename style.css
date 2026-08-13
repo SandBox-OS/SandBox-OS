@@ -28,7 +28,7 @@ body.pixel-theme * {
     overflow: hidden;
 }
 
-/* Quadrado de Seleção Azul estilo Windows */
+/* Quadrado de Seleção Azul */
 #selection-box {
     position: absolute;
     border: 1px solid #0078d7;
@@ -70,7 +70,6 @@ body.pixel-theme * {
     justify-content: center;
 }
 
-/* Imagens Pixel Art dos Ícones no Desktop */
 .app-icon-img {
     width: 44px;
     height: 44px;
@@ -89,6 +88,30 @@ body.pixel-theme * {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 76px;
+}
+
+/* Estilo da Lixeira */
+.trash-shortcut {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    z-index: 9;
+}
+
+.trash-hover {
+    background: rgba(232, 17, 35, 0.4) !important;
+    border-color: #ff5555 !important;
+    transform: scale(1.1);
 }
 
 /* Barra de Tarefas (Taskbar) */
@@ -132,7 +155,6 @@ body.pixel-theme * {
     gap: 6px;
 }
 
-/* Botões da Barra de Tarefas com apenas Ícone estilo OS */
 .taskbar-button {
     background: transparent;
     border: none;
@@ -166,7 +188,6 @@ body.pixel-theme * {
     background: rgba(255, 255, 255, 0.15);
 }
 
-/* App aberto / focado */
 .taskbar-button.is-open {
     opacity: 1;
 }
@@ -186,7 +207,7 @@ body.pixel-theme * {
     background-color: #00a4ef;
 }
 
-/* Tray Clock e Popups */
+/* Tray & Popups */
 .tray-item {
     color: white;
     font-size: 12px;
@@ -213,7 +234,6 @@ body.pixel-theme * {
     z-index: 100000;
 }
 
-/* Calendar Day */
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -233,7 +253,7 @@ body.pixel-theme * {
     font-weight: bold;
 }
 
-/* Estrutura das Janelas (Windows) */
+/* Estrutura das Janelas */
 .window {
     position: absolute;
     width: 500px;
