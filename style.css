@@ -12,6 +12,11 @@ body, html {
     overflow: hidden;
 }
 
+/* Regra Global do Modo Pixel */
+body.pixel-theme * {
+    font-family: 'Pixelify Sans', cursive, monospace !important;
+}
+
 /* Área de Trabalho (Desktop) */
 #desktop {
     width: 100vw;
@@ -59,6 +64,18 @@ body, html {
 
 .shortcut-icon {
     font-size: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Imagens Pixel Art dos Ícones no Desktop */
+.app-icon-img {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    display: none;
 }
 
 .shortcut-title {
@@ -128,6 +145,13 @@ body, html {
 
 .taskbar-button .taskbar-icon {
     font-size: 20px;
+}
+
+.taskbar-icon-img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    image-rendering: pixelated;
 }
 
 .taskbar-button:hover {
@@ -294,6 +318,22 @@ body, html {
     background: rgba(255, 255, 255, 0.1);
 }
 
+.start-icon-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+}
+
+.start-app-icon-img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    display: none;
+}
+
 /* Snap Layouts */
 .snap-left {
     top: 0 !important;
@@ -428,6 +468,7 @@ body, html {
     gap: 10px;
     margin-top: 10px;
 }
+
 /* Estilos para Apps Fixados e Abertos */
 .taskbar-button {
     opacity: 0.7;
@@ -461,7 +502,7 @@ body, html {
 }
 
 /* ==========================================
-   TELA DE AUTENTICAÇÃO / LOGIN (NOVO)
+   TELA DE AUTENTICAÇÃO / LOGIN
    ========================================== */
 #auth-modal-overlay {
     position: fixed;
@@ -574,6 +615,7 @@ body, html {
     text-align: center;
     display: none;
 }
+
 /* Menu de Contexto Personalizado */
 .context-menu {
     background: rgba(30, 30, 30, 0.9);
