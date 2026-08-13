@@ -71,7 +71,13 @@
             <span class="shortcut-title">Configurações</span>
         </div>
 
-        <!-- Onde arquivos e atalhos adicionados à área de trabalho aparecerão -->
+        <!-- Lixeira do Sistema -->
+        <div class="trash-shortcut" id="trash-bin">
+            <span style="font-size: 32px;">🗑️</span>
+            <span class="shortcut-title">Lixeira</span>
+        </div>
+
+        <!-- Atalhos customizados e arquivos no desktop -->
         <div id="custom-desktop-shortcuts"></div>
     </div>
 
@@ -79,16 +85,16 @@
     <div id="start-menu" onclick="event.stopPropagation()">
         <input type="text" class="start-search" placeholder="Digite para pesquisar..." oninput="filterStartMenuApps(this.value)">
         <div style="flex: 1; overflow-y: auto;">
-            <div class="start-app-item" data-name="bloco de notas" onclick="openAppFromStart('notepad')">
+            <div class="start-app-item" data-app="notepad" data-name="bloco de notas" onclick="openAppFromStart('notepad')">
                 <span class="start-icon-container"><img src="" class="start-app-icon-img img-icon-notepad"><span class="emoji-icon-notepad">📝</span></span> Bloco de Notas
             </div>
-            <div class="start-app-item" data-name="meus arquivos" onclick="openAppFromStart('files')">
+            <div class="start-app-item" data-app="files" data-name="meus arquivos" onclick="openAppFromStart('files')">
                 <span class="start-icon-container"><img src="" class="start-app-icon-img img-icon-files"><span class="emoji-icon-files">📁</span></span> Meus Arquivos
             </div>
-            <div class="start-app-item" data-name="calculadora" onclick="openAppFromStart('calc')">
+            <div class="start-app-item" data-app="calc" data-name="calculadora" onclick="openAppFromStart('calc')">
                 <span class="start-icon-container"><img src="" class="start-app-icon-img img-icon-calc"><span class="emoji-icon-calc">🧮</span></span> Calculadora
             </div>
-            <div class="start-app-item" data-name="configuracoes" onclick="openAppFromStart('settings')">
+            <div class="start-app-item" data-app="settings" data-name="configuracoes" onclick="openAppFromStart('settings')">
                 <span>⚙️</span> Configurações
             </div>
         </div>
@@ -123,7 +129,7 @@
         </div>
         <div class="window-body" style="display: flex; flex-direction: column;">
             <div style="display: flex; gap: 6px; align-items: center; background: #111; padding: 4px 8px;">
-                <button onclick="saveNotepadAsFile()" style="background: #0078d7; color: white; border: none; padding: 3px 8px; font-size: 11px; border-radius: 3px; cursor: pointer;">💾 Salvar nos Meus Arquivos</button>
+                <button id="btn-save-notepad" onclick="saveNotepadAsFile()" style="background: #0078d7; color: white; border: none; padding: 3px 8px; font-size: 11px; border-radius: 3px; cursor: pointer;">💾 Salvar em Meus Arquivos</button>
                 <button onclick="downloadNotepadFile()" style="background: #333; color: white; border: 1px solid #555; padding: 3px 8px; font-size: 11px; border-radius: 3px; cursor: pointer;">⬇️ Baixar .txt</button>
                 <div id="notepad-status" style="font-size: 10px; color: #888; margin-left: auto;">Pronto</div>
             </div>
@@ -168,7 +174,7 @@
         <div class="window-resize-handle"></div>
     </div>
 
-    <!-- SISTEMA 2: Visualizador de Mídia (Programa ocultado que não aparece no menu nem na barra diretamente) -->
+    <!-- Visualizador de Mídia -->
     <div class="window" id="win-viewer" style="top: 70px; left: 180px; width: 550px; height: 420px;">
         <div class="window-header" id="win-viewer-header">
             <span id="viewer-title">🖼️ Visualizador de Mídia</span>
@@ -305,7 +311,7 @@
         </div>
     </div>
 
-    <!-- Menu de Contexto Desktop -->
+    <!-- Menus de Contexto -->
     <div id="context-menu" class="context-menu" style="display: none; position: absolute; z-index: 999999;">
         <ul>
             <li onclick="createNewNoteShortcut()">📝 Novo Bloco de Notas</li>
@@ -316,15 +322,19 @@
         </ul>
     </div>
 
-    <!-- MENU DE CONTEXTO DOS ARQUIVOS (SISTEMA 1) -->
     <div id="file-context-menu" class="context-menu" style="display: none; position: absolute; z-index: 999999;">
         <ul id="file-context-options"></ul>
     </div>
 
-    <!-- MENU DE CONTEXTO DA BARRA DE TAREFAS (SISTEMA 3) -->
     <div id="taskbar-context-menu" class="context-menu" style="display: none; position: absolute; z-index: 999999;">
         <ul>
             <li id="pin-toggle-btn" onclick="togglePinCurrentApp()">📌 Fixar / Desfixar da Barra</li>
+        </ul>
+    </div>
+
+    <div id="start-context-menu" class="context-menu" style="display: none; position: absolute; z-index: 999999;">
+        <ul>
+            <li onclick="addStartAppToDesktop()">🖥️ Adicionar à Área de Trabalho</li>
         </ul>
     </div>
 
