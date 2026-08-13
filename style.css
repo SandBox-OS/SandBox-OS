@@ -51,6 +51,7 @@ body.pixel-theme * {
     cursor: pointer;
     border: 1px solid transparent;
     transition: background 0.15s;
+    z-index: 10;
 }
 
 .draggable-shortcut:hover {
@@ -84,6 +85,10 @@ body.pixel-theme * {
     text-align: center;
     margin-top: 4px;
     text-shadow: 1px 1px 2px black;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 76px;
 }
 
 /* Barra de Tarefas (Taskbar) */
@@ -141,6 +146,8 @@ body.pixel-theme * {
     justify-content: center;
     min-width: 42px;
     height: 38px;
+    opacity: 0.7;
+    transition: all 0.2s;
 }
 
 .taskbar-button .taskbar-icon {
@@ -155,21 +162,28 @@ body.pixel-theme * {
 }
 
 .taskbar-button:hover {
+    opacity: 1;
     background: rgba(255, 255, 255, 0.15);
 }
 
-.taskbar-button.active {
-    background: rgba(255, 255, 255, 0.2);
+/* App aberto / focado */
+.taskbar-button.is-open {
+    opacity: 1;
 }
 
-.taskbar-button.active::after {
+.taskbar-button.is-open::after {
     content: '';
     position: absolute;
     bottom: 2px;
-    width: 16px;
+    width: 12px;
     height: 3px;
     background-color: #0078d7;
     border-radius: 2px;
+}
+
+.taskbar-button.active::after {
+    width: 18px;
+    background-color: #00a4ef;
 }
 
 /* Tray Clock e Popups */
@@ -356,7 +370,7 @@ body.pixel-theme * {
 }
 
 .file-manager-sidebar {
-    width: 130px;
+    width: 140px;
     background: #181818;
     padding: 10px;
     display: flex;
@@ -388,16 +402,24 @@ body.pixel-theme * {
     align-content: flex-start;
 }
 
-.file-item {
-    width: 70px;
+.file-card-item {
     text-align: center;
+    width: 95px;
+    word-break: break-all;
+    margin: 5px;
+    background: rgba(255,255,255,0.05);
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     cursor: pointer;
-    padding: 5px;
-    border-radius: 4px;
+    transition: background 0.15s ease;
 }
 
-.file-item:hover {
-    background: rgba(255, 255, 255, 0.1);
+.file-card-item:hover {
+    background: rgba(255,255,255,0.15);
 }
 
 .file-icon {
@@ -405,10 +427,13 @@ body.pixel-theme * {
 }
 
 .file-name {
-    font-size: 10px;
-    overflow: hidden;
+    font-size: 11px;
+    margin-top: 4px;
+    color: #eee;
     text-overflow: ellipsis;
+    overflow: hidden;
     white-space: nowrap;
+    width: 100%;
 }
 
 /* Configurações */
@@ -469,41 +494,7 @@ body.pixel-theme * {
     margin-top: 10px;
 }
 
-/* Estilos para Apps Fixados e Abertos */
-.taskbar-button {
-    opacity: 0.7;
-    transition: all 0.2s;
-}
-
-.taskbar-button:hover {
-    opacity: 1;
-    background: rgba(255, 255, 255, 0.15);
-}
-
-/* Indicador de que o app está aberto (ponto/linha azul embaixo) */
-.taskbar-button.is-open {
-    opacity: 1;
-}
-
-.taskbar-button.is-open::after {
-    content: '';
-    position: absolute;
-    bottom: 2px;
-    width: 12px;
-    height: 3px;
-    background-color: #0078d7;
-    border-radius: 2px;
-}
-
-/* App Focado/Ativo */
-.taskbar-button.active::after {
-    width: 18px;
-    background-color: #00a4ef;
-}
-
-/* ==========================================
-   TELA DE AUTENTICAÇÃO / LOGIN
-   ========================================== */
+/* Tela de Login */
 #auth-modal-overlay {
     position: fixed;
     top: 0;
@@ -616,15 +607,15 @@ body.pixel-theme * {
     display: none;
 }
 
-/* Menu de Contexto Personalizado */
+/* Menus de Contexto */
 .context-menu {
-    background: rgba(30, 30, 30, 0.9);
+    background: rgba(30, 30, 30, 0.95);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
     padding: 6px 0;
-    width: 180px;
+    width: 200px;
 }
 
 .context-menu ul {
@@ -635,7 +626,7 @@ body.pixel-theme * {
 
 .context-menu li {
     padding: 8px 14px;
-    font-size: 13px;
+    font-size: 12px;
     color: #fff;
     cursor: pointer;
     display: flex;
@@ -645,7 +636,7 @@ body.pixel-theme * {
 }
 
 .context-menu li:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(0, 120, 215, 0.8);
 }
 
 .context-menu hr {
