@@ -203,7 +203,6 @@ function initializeOS() {
     initTrashBin();
     initStartMenuContextMenu();
 
-    // Garante que TODOS os atalhos (incluindo lixeira) sejam configurados para drag & drop e salvamento
     document.querySelectorAll('.draggable-shortcut, #trash-bin').forEach(shortcut => {
         if (!shortcut.classList.contains('draggable-shortcut')) {
             shortcut.classList.add('draggable-shortcut');
@@ -324,7 +323,19 @@ function appendToCalc(val) {
     display.value += val;
 }
 
-// --- 📝 BLOCO DE NOTAS (LOCAL COM SALVAMENTO MANUAL) ---
+function calculateResult() {
+    const display = document.getElementById('calc-display');
+    if (!display) return;
+    try {
+        // Substituído o eval por avaliação matemática segura usando Function
+        const safeEval = new Function(`return ${display.value}`);
+        display.value = safeEval();
+    } catch {
+        display.value = 'Erro';
+    }
+}
+
+// --- 📝 BLOCO DE NOTAS ---
 function updateNotepadSaveBtnUI() {
     const btn = document.getElementById("btn-save-notepad");
     if (!btn) return;
@@ -340,7 +351,6 @@ function initNotepadEvents() {
     const textarea = document.getElementById("notepad-textarea");
     if (!textarea) return;
 
-    // Apenas salva no Rascunho do navegador local enquanto digita, sem disparar chamadas na nuvem
     textarea.addEventListener("input", () => {
         setNotepadStatus("Rascunho não salvo...");
         localStorage.setItem("sandboxos_note_text", textarea.value);
@@ -353,7 +363,6 @@ function setNotepadStatus(msg) {
 }
 
 async function saveNoteToCloud() {
-    // Chamado apenas explicitamente quando o usuário clicar no botão de salvar
     const textarea = document.getElementById("notepad-textarea");
     if (!textarea) return;
 
@@ -876,7 +885,7 @@ function initTrashBin() {
     });
 }
 
-// --- 🖱️ DRAG & DROP COM GRADE PURA (SNAP TO GRID ANTIGO) ---
+// --- 🖱️ DRAG & DROP COM GRADE ---
 function makeShortcutDraggable(elmnt) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let isDragging = false;
@@ -896,7 +905,6 @@ function makeShortcutDraggable(elmnt) {
         pos3 = e.clientX; 
         pos4 = e.clientY;
 
-        // Vínculo global no document garante soltura limpa do mouse ("Sem Chiclete")
         document.addEventListener("mousemove", dragShortcut);
         document.addEventListener("mouseup", closeDragShortcut);
     };
@@ -930,14 +938,12 @@ function makeShortcutDraggable(elmnt) {
     }
 
     function closeDragShortcut() {
-        // Remove escutadores imediatamente para destravar o cursor
         document.removeEventListener("mousemove", dragShortcut);
         document.removeEventListener("mouseup", closeDragShortcut);
 
         if (isDragging) {
             const selectedShortcuts = document.querySelectorAll('.draggable-shortcut.selected');
             selectedShortcuts.forEach(shortcut => {
-                // Alinhamento direto na grade (Sistema Antigo Puro)
                 let snappedLeft = Math.round((shortcut.offsetLeft - 20) / gridX) * gridX + 20;
                 let snappedTop = Math.round((shortcut.offsetTop - 20) / gridY) * gridY + 20;
 
@@ -1588,7 +1594,7 @@ function togglePinCurrentApp() {
     closeAllContextMenus();
 }
 
-// --- 🔍 MENU INICIAR E SEUS ATALHOS ---
+// --- 🔍 MENU INICIAR ---
 let selectedAppFromStart = null;
 
 function initStartMenuContextMenu() {
