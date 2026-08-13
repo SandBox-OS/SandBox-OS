@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SandBox-OS</title>
+    <!-- Fontes do Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Pixelify+Sans:wght@400;700&family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
     <!-- SDK do Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -56,17 +61,17 @@
 
         <!-- Ícones / Atalhos -->
         <div class="draggable-shortcut" id="shortcut-notepad" style="top: 20px; left: 20px;">
-            <span class="shortcut-icon">📝</span>
+            <span class="shortcut-icon"><img src="" alt="Bloco de Notas" id="img-icon-notepad" class="app-icon-img"><span id="emoji-icon-notepad">📝</span></span>
             <span class="shortcut-title">Bloco de Notas</span>
         </div>
 
         <div class="draggable-shortcut" id="shortcut-files" style="top: 20px; left: 110px;">
-            <span class="shortcut-icon">📁</span>
+            <span class="shortcut-icon"><img src="" alt="Meus Arquivos" id="img-icon-files" class="app-icon-img"><span id="emoji-icon-files">📁</span></span>
             <span class="shortcut-title">Meus Arquivos</span>
         </div>
 
         <div class="draggable-shortcut" id="shortcut-calc" style="top: 20px; left: 200px;">
-            <span class="shortcut-icon">🧮</span>
+            <span class="shortcut-icon"><img src="" alt="Calculadora" id="img-icon-calc" class="app-icon-img"><span id="emoji-icon-calc">🧮</span></span>
             <span class="shortcut-title">Calculadora</span>
         </div>
 
@@ -81,13 +86,13 @@
         <input type="text" class="start-search" placeholder="Digite para pesquisar..." oninput="filterStartMenuApps(this.value)">
         <div style="flex: 1; overflow-y: auto;">
             <div class="start-app-item" data-name="bloco de notas" onclick="openAppFromStart('notepad')">
-                <span>📝</span> Bloco de Notas
+                <span class="start-icon-container"><img src="" class="start-app-icon-img img-icon-notepad"><span class="emoji-icon-notepad">📝</span></span> Bloco de Notas
             </div>
             <div class="start-app-item" data-name="meus arquivos" onclick="openAppFromStart('files')">
-                <span>📁</span> Meus Arquivos
+                <span class="start-icon-container"><img src="" class="start-app-icon-img img-icon-files"><span class="emoji-icon-files">📁</span></span> Meus Arquivos
             </div>
             <div class="start-app-item" data-name="calculadora" onclick="openAppFromStart('calc')">
-                <span>🧮</span> Calculadora
+                <span class="start-icon-container"><img src="" class="start-app-icon-img img-icon-calc"><span class="emoji-icon-calc">🧮</span></span> Calculadora
             </div>
             <div class="start-app-item" data-name="configuracoes" onclick="openAppFromStart('settings')">
                 <span>⚙️</span> Configurações
@@ -236,7 +241,26 @@
                     <div id="settings-tab-sistema" class="settings-tab-content">
                         <h3>Sobre o Sistema</h3>
                         <p style="font-size: 12px; color: #ccc; margin-top: 10px;">Web OS Sandbox v2.0</p>
-                        <p id="user-info-display" style="font-size: 12px; color: #00a4ef; margin-top: 5px;"></p>
+                        <p id="user-info-display" style="font-size: 12px; color: #00a4ef; margin-top: 5px; margin-bottom: 15px;"></p>
+                        
+                        <hr style="border: 0; border-top: 1px solid #3c3c3c; margin: 15px 0;">
+
+                        <!-- Seleção de Estilo de Fonte -->
+                        <h3>Aparência do Sistema</h3>
+                        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+                            <label for="font-style-select" style="font-size: 12px; color: #ccc;">Estilo de Fonte:</label>
+                            <select id="font-style-select" onchange="alterarFonteManual(this.value)" style="background: #141414; color: white; border: 1px solid #444; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; cursor: pointer;">
+                                <option value="Segoe UI">Segoe UI (Padrão)</option>
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                                <option value="Pixelify Sans">Pixel Art (Pixelify Sans)</option>
+                                <option value="Press Start 2P">Retro Arcade (Press Start 2P)</option>
+                                <option value="Courier New">Terminal (Monospace)</option>
+                            </select>
+                            <small id="font-override-note" style="font-size: 10px; color: #ffab00; display: none; margin-top: 2px;">
+                                ⚠️ O papel de parede padrão está ativo, forçando o Modo Pixel global.
+                            </small>
+                        </div>
                     </div>
                 </div>
             </div>
