@@ -21,7 +21,6 @@ const DEFAULT_WALLPAPERS = [
     { id: 'default_6', name: 'Vista Para Cidade', url: 'assets/wallpapers/Vista Para Cidade.png', isDefault: true }
 ];
 
-// Mapeamento de Ícones em Pixel Art Customizados
 const PIXEL_ART_ICONS = {
     'notepad': 'assets/icons/pixel/BlocoDeNotasPixelArt.png',
     'files': 'assets/icons/pixel/ArquivosPixelArt.png',
@@ -30,29 +29,25 @@ const PIXEL_ART_ICONS = {
 
 let isSignUpMode = true;
 let highestZIndex = 10;
-
-// Lista de Apps abertos no sistema
 const openAppsList = {};
 
-// SISTEMA 3: Lista de Apps fixados na Barra de Tarefas
 let pinnedApps = JSON.parse(localStorage.getItem("sandbox_pinned_apps")) || ['notepad', 'files', 'calc', 'settings'];
 let selectedAppForTaskbarContext = null;
 
-// SISTEMA 1 & 4: Mapeamento local de nomes customizados (renomeação interna do OS) e pastas do sistema
 let customFileDisplayNames = JSON.parse(localStorage.getItem("sandbox_file_renames")) || {};
 let customFolders = JSON.parse(localStorage.getItem("sandbox_custom_folders")) || [];
+let fileFolderAssignments = JSON.parse(localStorage.getItem("sandbox_file_folders")) || {}; 
+let currentSavedNoteFileName = localStorage.getItem("sandbox_notepad_filename") || null;
+
 let selectedFileContext = null;
 
 const gridX = 90; 
 const gridY = 90; 
 
 let currentFolder = 'geral';
-
-// Variáveis para Controle do Debounce do Bloco de Notas
 let notepadSaveTimeout = null;
 let lastSavedContent = "";
 
-// Mapeamento de Ícones Padrão (Emoji) dos Apps
 const appIcons = {
     'notepad': '📝',
     'settings': '⚙️',
@@ -188,7 +183,6 @@ async function logoutUser() {
 function initializeOS() {
     checkUserSession();
 
-    // Restaurar Wallpaper
     const savedWallpaper = localStorage.getItem('sandbox_wallpaper') || DEFAULT_WALLPAPERS[0].url;
     const wallpaperType = localStorage.getItem('sandbox_wallpaper_type') || 'image';
 
@@ -202,13 +196,13 @@ function initializeOS() {
     const fontSelect = document.getElementById('font-style-select');
     if (fontSelect) fontSelect.value = savedFont;
 
-    // Inicializar Eventos
     initNotepadEvents();
     renderDefaultWallpapers();
     renderWallpaperHistory();
     initContextMenu();
+    initTrashBin();
+    initStartMenuContextMenu();
 
-    // Configurar atalhos fixos do desktop
     document.querySelectorAll('.draggable-shortcut').forEach(shortcut => {
         const coords = localStorage.getItem("pos_" + shortcut.id);
         if (coords) {
@@ -226,10 +220,8 @@ function initializeOS() {
         };
     });
 
-    // Restaurar atalhos customizados do desktop
     loadCustomDesktopItems();
 
-    // Tornar janelas arrastáveis
     document.querySelectorAll('.window').forEach(win => {
         makeDraggableAndResizable(win);
         win.addEventListener('mousedown', () => focusWindow(win));
@@ -240,6 +232,7 @@ function initializeOS() {
     setInterval(updateClockEngine, 1000);
     renderCustomFolders();
     updateTaskbar();
+    updateNotepadSaveBtnUI();
 }
 
 document.addEventListener("DOMContentLoaded", initializeOS);
@@ -323,7 +316,18 @@ function appendToCalc(val) {
     display.value += val;
 }
 
-// --- 📝 BLOCO DE NOTAS (DEBOUNCE + BANCO DE DADOS) ---
+// --- 📝 BLOCO DE NOTAS (ALTERAÇÃO / ATUALIZAÇÃO ÚNICA) ---
+function updateNotepadSaveBtnUI() {
+    const btn = document.getElementById("btn-save-notepad");
+    if (!btn) return;
+
+    if (currentSavedNoteFileName) {
+        btn.innerText = "💾 Alterar em Meus Arquivos";
+    } else {
+        btn.innerText = "💾 Salvar em Meus Arquivos";
+    }
+}
+
 function initNotepadEvents() {
     const textarea = document.getElementById("notepad-textarea");
     if (!textarea) return;
@@ -442,10 +446,12 @@ function createNewNoteShortcut() {
         textarea.value = "";
         textarea.focus();
     }
+    currentSavedNoteFileName = null;
+    localStorage.removeItem("sandbox_notepad_filename");
+    updateNotepadSaveBtnUI();
     setNotepadStatus("Nova nota criada");
 }
 
-// SISTEMA 4: Salvar Nota digitada como arquivo .txt diretamente no 'Meus Arquivos' da nuvem
 async function saveNotepadAsFile() {
     const textarea = document.getElementById("notepad-textarea");
     if (!textarea) return;
@@ -455,11 +461,6 @@ async function saveNotepadAsFile() {
         alert("O bloco de notas está vazio!");
         return;
     }
-
-    const fileName = prompt("Digite o nome do arquivo para salvar em Meus Arquivos:", "Anotacao.txt");
-    if (!fileName) return;
-
-    const finalFileName = fileName.endsWith('.txt') ? fileName : `${fileName}.txt`;
 
     if (!supabaseClient) {
         alert("Supabase não está configurado!");
@@ -472,19 +473,31 @@ async function saveNotepadAsFile() {
         return;
     }
 
+    let finalFileName = currentSavedNoteFileName;
+
+    if (!finalFileName) {
+        const fileName = prompt("Digite o nome do arquivo para salvar em Meus Arquivos:", "Anotacao.txt");
+        if (!fileName) return;
+        finalFileName = fileName.endsWith('.txt') ? fileName : `${fileName}.txt`;
+    }
+
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const file = new File([blob], finalFileName, { type: "text/plain" });
-    const filePath = `${user.id}/${Date.now()}_${finalFileName}`;
+    const filePath = `${user.id}/${finalFileName}`;
 
     setNotepadStatus("Enviando arquivo...");
 
-    const { error } = await supabaseClient.storage.from('meus-arquivos').upload(filePath, file);
+    const { error } = await supabaseClient.storage.from('meus-arquivos').upload(filePath, file, { upsert: true });
 
     if (error) {
         alert("Erro ao salvar arquivo: " + error.message);
         setNotepadStatus("Erro ao salvar");
     } else {
-        alert(`Arquivo '${finalFileName}' salvo em Meus Arquivos com sucesso!`);
+        currentSavedNoteFileName = finalFileName;
+        localStorage.setItem("sandbox_notepad_filename", finalFileName);
+        updateNotepadSaveBtnUI();
+
+        alert(`Arquivo '${finalFileName}' atualizado em Meus Arquivos!`);
         setNotepadStatus("Salvo em Meus Arquivos ✓");
         carregarMeusArquivos();
     }
@@ -499,7 +512,7 @@ function downloadNotepadFile() {
     const link = document.createElement("a");
 
     link.href = URL.createObjectURL(blob);
-    link.download = `Nota_${new Date().toISOString().slice(0,10)}.txt`;
+    link.download = currentSavedNoteFileName || `Nota_${new Date().toISOString().slice(0,10)}.txt`;
     link.click();
     URL.revokeObjectURL(link.href);
 }
@@ -561,7 +574,6 @@ function renderCalendar() {
     }
 }
 
-// --- 🔔 TRAY & POPUPS ---
 function toggleTrayPopup(popupId, event) {
     event.stopPropagation();
     const targetPopup = document.getElementById(popupId);
@@ -583,12 +595,13 @@ function closeAllContextMenus() {
     const ctx = document.getElementById('context-menu');
     const fCtx = document.getElementById('file-context-menu');
     const tCtx = document.getElementById('taskbar-context-menu');
+    const sCtx = document.getElementById('start-context-menu');
     if (ctx) ctx.style.display = 'none';
     if (fCtx) fCtx.style.display = 'none';
     if (tCtx) tCtx.style.display = 'none';
+    if (sCtx) sCtx.style.display = 'none';
 }
 
-// --- 🔍 MENU INICIAR ---
 function filterStartMenuApps(query) {
     const filter = query.toLowerCase();
     document.querySelectorAll('.start-app-item').forEach(item => {
@@ -597,7 +610,6 @@ function filterStartMenuApps(query) {
     });
 }
 
-// --- 🖱️ MENU DE CONTEXTO DO DESKTOP ---
 function initContextMenu() {
     const desktop = document.getElementById('desktop');
     const contextMenu = document.getElementById('context-menu');
@@ -628,7 +640,6 @@ function initContextMenu() {
     });
 }
 
-// --- 🖱️ SELEÇÃO MÚLTIPLA ---
 function initDesktopSelection() {
     const desktop = document.getElementById('desktop');
     const box = document.getElementById('selection-box');
@@ -682,7 +693,6 @@ function initDesktopSelection() {
     });
 }
 
-// --- 🎨 WALLPAPERS ---
 function setWallpaperFromUrl(url) {
     const desktop = document.getElementById('desktop');
     const videoBg = document.getElementById('desktop-video-wallpaper');
@@ -706,9 +716,7 @@ function setWallpaperFromUrl(url) {
         videoBg.style.objectFit = 'cover';
         videoBg.style.zIndex = '0';
 
-        videoBg.play().catch(err => {
-            console.warn("Autoplay de vídeo impedido pelo navegador:", err);
-        });
+        videoBg.play().catch(err => console.warn(err));
 
         desktop.style.backgroundImage = 'none';
 
@@ -752,7 +760,7 @@ function setSolidWallpaper(color) {
 }
 
 function renderDefaultWallpapers() {
-    const container = document.getElementById("default-wallpaper-grid") || document.getElementById("wallpaper-default-grid");
+    const container = document.getElementById("default-wallpaper-grid");
     if (!container) return;
 
     container.innerHTML = "";
@@ -839,10 +847,48 @@ function openFilesForWallpaper() {
     switchFolder('imagens');
 }
 
-// --- 🖱️ DRAG & DROP ÍCONES DESKTOP ---
+// --- 🗑️ LIXEIRA DA ÁREA DE TRABALHO ---
+function initTrashBin() {
+    const trash = document.getElementById("trash-bin");
+    if (!trash) return;
+
+    trash.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        trash.classList.add("trash-hover");
+    });
+
+    trash.addEventListener("dragleave", () => {
+        trash.classList.remove("trash-hover");
+    });
+
+    trash.addEventListener("drop", (e) => {
+        e.preventDefault();
+        trash.classList.remove("trash-hover");
+        const shortcutId = e.dataTransfer.getData("text/plain");
+        if (shortcutId) {
+            const el = document.getElementById(shortcutId);
+            if (el) {
+                if (el.classList.contains("custom-shortcut")) {
+                    const serverFileName = el.getAttribute("data-filename");
+                    if (serverFileName) removeDesktopItemByServerFile(serverFileName);
+                    el.remove();
+                } else if (confirm("Deseja remover este atalho do Desktop?")) {
+                    el.style.display = "none";
+                }
+            }
+        }
+    });
+}
+
+// --- 🖱️ DRAG & DROP DE ÍCONES NO DESKTOP ---
 function makeShortcutDraggable(elmnt) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let isDragging = false;
+
+    elmnt.setAttribute("draggable", "true");
+    elmnt.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", elmnt.id);
+    });
 
     elmnt.onmousedown = function(e) {
         e = e || window.event;
@@ -952,7 +998,7 @@ function findFreeGridSlot(currentShortcut, targetLeft, targetTop) {
 }
 
 // ==========================================
-// 📁 SISTEMA 1 & 4: MEUS ARQUIVOS, PASTAS E CONTEXTO DE ARQUIVO
+// 📁 MEUS ARQUIVOS, PASTAS E CONTEXTO DE ARQUIVO
 // ==========================================
 
 function switchFolder(folderName) {
@@ -965,7 +1011,6 @@ function switchFolder(folderName) {
     carregarMeusArquivos();
 }
 
-// SISTEMA 4: Criação de Pastas Personalizadas
 function createNewFolder() {
     const folderName = prompt("Digite o nome da nova pasta:");
     if (!folderName || !folderName.trim()) return;
@@ -1063,16 +1108,20 @@ async function carregarMeusArquivos() {
         return;
     }
 
-    // Filtrar os arquivos conforme a aba/pasta atual
+    // Filtrar os arquivos considerando alocação exata em pastas
     const filteredFiles = data.filter(file => {
         const ext = file.name.split('.').pop().toLowerCase();
         const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
         const isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
 
+        const assignedFolder = fileFolderAssignments[file.name];
+
+        if (currentFolder === 'geral') return true;
         if (currentFolder === 'imagens') return isImage;
         if (currentFolder === 'videos') return isVideo;
-        if (currentFolder === 'downloads') return !isImage && !isVideo;
-        return true; // 'geral' ou pasta customizada
+        if (currentFolder === 'downloads') return assignedFolder === 'downloads';
+
+        return assignedFolder === currentFolder;
     });
 
     if (filteredFiles.length === 0) {
@@ -1105,10 +1154,8 @@ async function carregarMeusArquivos() {
             <span class="file-name" title="${displayName}">${displayName}</span>
         `;
 
-        // Ação de duplo clique para abrir diretamente
         fileItem.ondblclick = () => abrirArquivoPeloOS(file.name, publicUrlData.publicUrl, ext);
 
-        // SISTEMA 1: Botão direito aciona Menu de Contexto do Arquivo
         fileItem.oncontextmenu = (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -1119,23 +1166,23 @@ async function carregarMeusArquivos() {
     });
 }
 
-// SISTEMA 1 & 2: Abrir arquivos no sistema
 async function abrirArquivoPeloOS(serverFileName, url, ext) {
     const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
     const isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
     const isText = ['txt', 'sql', 'json', 'js', 'html', 'css', 'md'].includes(ext);
 
     if (isImage || isVideo) {
-        // SISTEMA 2: Abre no programa Visualizador de Mídia do próprio OS
         openMediaViewer(url, ext);
     } else if (isText) {
-        // SISTEMA 1: Se for arquivo de texto, abre no Bloco de Notas para leitura/edição
         try {
             const res = await fetch(url);
             const textContent = await res.text();
             openApp('notepad');
             const textarea = document.getElementById("notepad-textarea");
             if (textarea) textarea.value = textContent;
+            currentSavedNoteFileName = serverFileName;
+            localStorage.setItem("sandbox_notepad_filename", serverFileName);
+            updateNotepadSaveBtnUI();
             setNotepadStatus(`Lido: ${customFileDisplayNames[serverFileName] || serverFileName}`);
         } catch (err) {
             alert("Erro ao ler conteúdo do arquivo!");
@@ -1145,7 +1192,6 @@ async function abrirArquivoPeloOS(serverFileName, url, ext) {
     }
 }
 
-// SISTEMA 1: Menu de contexto do arquivo (Botão direito)
 function showFileContextMenu(e, serverFileName, publicUrl, ext, displayName) {
     closeAllContextMenus();
     const menu = document.getElementById('file-context-menu');
@@ -1158,7 +1204,6 @@ function showFileContextMenu(e, serverFileName, publicUrl, ext, displayName) {
     const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
     const isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
 
-    // Opção Abrir
     const openLi = document.createElement('li');
     openLi.innerText = '📂 Abrir no OS';
     openLi.onclick = () => {
@@ -1167,7 +1212,6 @@ function showFileContextMenu(e, serverFileName, publicUrl, ext, displayName) {
     };
     list.appendChild(openLi);
 
-    // Opção Usar como Wallpaper (Exclusivo para Imagens e Vídeos)
     if (isImage || isVideo) {
         const wallLi = document.createElement('li');
         wallLi.innerText = '🖼️ Usar como Wallpaper';
@@ -1178,7 +1222,6 @@ function showFileContextMenu(e, serverFileName, publicUrl, ext, displayName) {
         list.appendChild(wallLi);
     }
 
-    // SISTEMA 4: Colocar arquivo na Área de Trabalho
     const dtLi = document.createElement('li');
     dtLi.innerText = '🖥️ Adicionar à Área de Trabalho';
     dtLi.onclick = () => {
@@ -1187,7 +1230,14 @@ function showFileContextMenu(e, serverFileName, publicUrl, ext, displayName) {
     };
     list.appendChild(dtLi);
 
-    // Opção Renomear (Efeito apenas interno no OS)
+    const moveLi = document.createElement('li');
+    moveLi.innerText = '📁 Mover para Pasta...';
+    moveLi.onclick = () => {
+        promptMoveToFolder(serverFileName);
+        closeAllContextMenus();
+    };
+    list.appendChild(moveLi);
+
     const renameLi = document.createElement('li');
     renameLi.innerText = '✏️ Renomear Arquivo';
     renameLi.onclick = () => {
@@ -1199,7 +1249,6 @@ function showFileContextMenu(e, serverFileName, publicUrl, ext, displayName) {
     const hr = document.createElement('hr');
     list.appendChild(hr);
 
-    // Opção Excluir
     const delLi = document.createElement('li');
     delLi.innerText = '🗑️ Excluir Arquivo';
     delLi.style.color = '#ff5555';
@@ -1212,15 +1261,37 @@ function showFileContextMenu(e, serverFileName, publicUrl, ext, displayName) {
     let posX = e.clientX;
     let posY = e.clientY;
     if (posX + 200 > window.innerWidth) posX = window.innerWidth - 200;
-    if (posY + 160 > window.innerHeight) posY = window.innerHeight - 160;
+    if (posY + 180 > window.innerHeight) posY = window.innerHeight - 180;
 
     menu.style.left = `${posX}px`;
     menu.style.top = `${posY}px`;
     menu.style.display = 'block';
 }
 
+function promptMoveToFolder(serverFileName) {
+    const foldersList = [
+        { id: 'downloads', name: 'Downloads' },
+        ...customFolders
+    ];
+
+    let optionsStr = foldersList.map((f, i) => `${i + 1}. ${f.name}`).join("\n");
+    const choice = prompt(`Selecione o número da pasta para mover este arquivo:\n${optionsStr}`);
+
+    if (!choice) return;
+    const index = parseInt(choice) - 1;
+
+    if (!isNaN(index) && foldersList[index]) {
+        fileFolderAssignments[serverFileName] = foldersList[index].id;
+        localStorage.setItem("sandbox_file_folders", JSON.stringify(fileFolderAssignments));
+        alert(`Arquivo movido para ${foldersList[index].name}!`);
+        carregarMeusArquivos();
+    } else {
+        alert("Opção inválida.");
+    }
+}
+
 function renomearArquivoInterno(serverFileName, currentName) {
-    const newName = prompt("Digite o novo nome para o arquivo (alteração interna do SandBox-OS):", currentName);
+    const newName = prompt("Digite o novo nome para o arquivo:", currentName);
     if (!newName || !newName.trim()) return;
 
     customFileDisplayNames[serverFileName] = newName.trim();
@@ -1245,15 +1316,15 @@ async function deletarArquivo(fileName) {
         alert("Erro ao excluir: " + error.message);
     } else {
         delete customFileDisplayNames[fileName];
+        delete fileFolderAssignments[fileName];
         localStorage.setItem("sandbox_file_renames", JSON.stringify(customFileDisplayNames));
+        localStorage.setItem("sandbox_file_folders", JSON.stringify(fileFolderAssignments));
         
-        // Remover da área de trabalho se tiver atalho
         removeDesktopItemByServerFile(fileName);
         carregarMeusArquivos();
     }
 }
 
-// SISTEMA 4: Gerenciamento de itens e atalhos na Área de Trabalho
 function addFileToDesktop(serverFileName, publicUrl, ext, displayName) {
     let desktopItems = JSON.parse(localStorage.getItem("sandbox_desktop_files")) || [];
     
@@ -1290,7 +1361,8 @@ function loadCustomDesktopItems() {
 
         const shortcut = document.createElement("div");
         shortcut.id = `shortcut-${item.id}`;
-        shortcut.className = "draggable-shortcut";
+        shortcut.className = "draggable-shortcut custom-shortcut";
+        shortcut.setAttribute("data-filename", item.serverFileName);
         
         const coords = localStorage.getItem("pos_" + shortcut.id);
         if (coords) {
@@ -1472,9 +1544,7 @@ function maximizeApp(appId) {
     }
 }
 
-// ==========================================
-// 📌 SISTEMA 3: BARRA DE TAREFAS & FIXAÇÃO DE PROGRAMAS
-// ==========================================
+// --- 📌 BARRA DE TAREFAS ---
 function updateTaskbar() {
     const container = document.getElementById('taskbar-apps');
     if (!container) return;
@@ -1483,11 +1553,9 @@ function updateTaskbar() {
     const currentWallpaper = localStorage.getItem('sandbox_wallpaper') || '';
     const isPixel = checarSeEWallpaperPadrao(currentWallpaper);
 
-    // Unir lista de apps fixados com apps atualmente abertos
     const allTaskbarApps = Array.from(new Set([...pinnedApps, ...Object.keys(openAppsList)]));
 
     allTaskbarApps.forEach(appId => {
-        // O programa visualizador de mídia não aparece na barra se não estiver aberto
         if (appId === 'viewer' && !openAppsList[appId]) return;
 
         const btn = document.createElement('button');
@@ -1513,7 +1581,6 @@ function updateTaskbar() {
             }
         };
 
-        // Clique com botão direito para exibir opção de fixar/desfixar
         btn.oncontextmenu = function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -1558,6 +1625,43 @@ function togglePinCurrentApp() {
     closeAllContextMenus();
 }
 
+// --- 🔍 MENU INICIAR E SEUS ATALHOS ---
+let selectedAppFromStart = null;
+
+function initStartMenuContextMenu() {
+    document.querySelectorAll('.start-app-item').forEach(item => {
+        item.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeAllContextMenus();
+
+            const appName = item.getAttribute('data-app');
+            selectedAppFromStart = appName;
+
+            const menu = document.getElementById('start-context-menu');
+            if (!menu) return;
+
+            menu.style.left = `${e.clientX}px`;
+            menu.style.top = `${e.clientY}px`;
+            menu.style.display = 'block';
+        });
+    });
+}
+
+function addStartAppToDesktop() {
+    if (!selectedAppFromStart) return;
+
+    const shortcutId = `shortcut-${selectedAppFromStart}`;
+    const el = document.getElementById(shortcutId);
+    if (el) {
+        el.style.display = 'flex';
+        alert(`Atalho para ${appNames[selectedAppFromStart]} adicionado à Área de Trabalho!`);
+    }
+
+    closeAllContextMenus();
+    document.getElementById("start-menu").style.display = "none";
+}
+
 function toggleStartMenu(event) {
     event.stopPropagation();
     closeAllPopups();
@@ -1594,9 +1698,7 @@ function switchSettingsTab(tabName) {
     if (activeContent) activeContent.classList.add('active');
 }
 
-// ==========================================
-// 🚀 SISTEMA 2: PROGRAMA VISUALIZADOR DE MÍDIAS OCULTO
-// ==========================================
+// --- 🖼️ VISUALIZADOR DE MÍDIA ---
 let currentZoom = 1;
 
 function openMediaViewer(url, ext) {
