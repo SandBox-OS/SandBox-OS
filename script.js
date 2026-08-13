@@ -45,6 +45,7 @@ const gridX = 90;
 const gridY = 90; 
 
 let currentFolder = 'geral';
+let notepadSaveTimeout = null;
 let lastSavedContent = "";
 
 const appIcons = {
@@ -202,23 +203,29 @@ function initializeOS() {
     initTrashBin();
     initStartMenuContextMenu();
 
-    document.querySelectorAll('.draggable-shortcut').forEach(shortcut => {
+    // Garante que TODOS os atalhos (incluindo lixeira) sejam configurados para drag & drop e salvamento
+    document.querySelectorAll('.draggable-shortcut, #trash-bin').forEach(shortcut => {
+        if (!shortcut.classList.contains('draggable-shortcut')) {
+            shortcut.classList.add('draggable-shortcut');
+        }
+        
         const coords = localStorage.getItem("pos_" + shortcut.id);
         if (coords) {
             const pos = JSON.parse(coords);
             shortcut.style.top = pos.top;
             shortcut.style.left = pos.left;
         }
+
         makeShortcutDraggable(shortcut);
         
-        shortcut.removeAttribute('onclick');
-        shortcut.ondblclick = function(e) {
-            e.stopPropagation();
-            const appId = shortcut.id.replace('shortcut-', '');
-            if (appId !== 'trash-bin' && appId !== 'trash') {
+        if (shortcut.id !== 'trash-bin') {
+            shortcut.removeAttribute('onclick');
+            shortcut.ondblclick = function(e) {
+                e.stopPropagation();
+                const appId = shortcut.id.replace('shortcut-', '');
                 openApp(appId);
-            }
-        };
+            };
+        }
     });
 
     loadCustomDesktopItems();
@@ -317,7 +324,7 @@ function appendToCalc(val) {
     display.value += val;
 }
 
-// --- 📝 BLOCO DE NOTAS (SALVAMENTO APENAS AO CLICAR) ---
+// --- 📝 BLOCO DE NOTAS (LOCAL COM SALVAMENTO MANUAL) ---
 function updateNotepadSaveBtnUI() {
     const btn = document.getElementById("btn-save-notepad");
     if (!btn) return;
@@ -333,9 +340,9 @@ function initNotepadEvents() {
     const textarea = document.getElementById("notepad-textarea");
     if (!textarea) return;
 
-    // Atualiza apenas localmente ao digitar (sem salvar na nuvem automaticamente)
+    // Apenas salva no Rascunho do navegador local enquanto digita, sem disparar chamadas na nuvem
     textarea.addEventListener("input", () => {
-        setNotepadStatus("Alterações pendentes (Clique em salvar)");
+        setNotepadStatus("Rascunho não salvo...");
         localStorage.setItem("sandboxos_note_text", textarea.value);
     });
 }
@@ -346,6 +353,7 @@ function setNotepadStatus(msg) {
 }
 
 async function saveNoteToCloud() {
+    // Chamado apenas explicitamente quando o usuário clicar no botão de salvar
     const textarea = document.getElementById("notepad-textarea");
     if (!textarea) return;
 
@@ -354,7 +362,6 @@ async function saveNoteToCloud() {
 
     if (!supabaseClient) {
         setNotepadStatus("Salvo localmente");
-        lastSavedContent = currentContent;
         return;
     }
 
@@ -410,7 +417,7 @@ async function loadUserNote() {
 
     setNotepadStatus("Carregando nota...");
 
-    const { data, error } = await supabaseClient
+    const { data } = await supabaseClient
         .from('notes')
         .select('content')
         .eq('user_id', user.id)
@@ -449,11 +456,10 @@ async function saveNotepadAsFile() {
         return;
     }
 
-    // Salva também a nota principal na nuvem
     await saveNoteToCloud();
 
     if (!supabaseClient) {
-        alert("Supabase não está configurado!");
+        alert("Nota salva apenas localmente.");
         return;
     }
 
@@ -839,22 +845,8 @@ function openFilesForWallpaper() {
 
 // --- 🗑️ LIXEIRA DA ÁREA DE TRABALHO ---
 function initTrashBin() {
-    // Procura a lixeira caso possua id especifico ou classe draggable
-    const trash = document.getElementById("trash-bin") || document.getElementById("shortcut-trash");
+    const trash = document.getElementById("trash-bin");
     if (!trash) return;
-
-    // Torna a lixeira móvel como os outros atalhos
-    if (!trash.classList.contains("draggable-shortcut")) {
-        trash.classList.add("draggable-shortcut");
-    }
-    
-    const coords = localStorage.getItem("pos_" + trash.id);
-    if (coords) {
-        const pos = JSON.parse(coords);
-        trash.style.top = pos.top;
-        trash.style.left = pos.left;
-    }
-    makeShortcutDraggable(trash);
 
     trash.addEventListener("dragover", (e) => {
         e.preventDefault();
@@ -869,7 +861,7 @@ function initTrashBin() {
         e.preventDefault();
         trash.classList.remove("trash-hover");
         const shortcutId = e.dataTransfer.getData("text/plain");
-        if (shortcutId && shortcutId !== trash.id) {
+        if (shortcutId) {
             const el = document.getElementById(shortcutId);
             if (el) {
                 if (el.classList.contains("custom-shortcut")) {
@@ -884,15 +876,10 @@ function initTrashBin() {
     });
 }
 
-// --- 🖱️ DRAG & DROP DE ÍCONES NO DESKTOP (CORRIGIDO) ---
+// --- 🖱️ DRAG & DROP COM GRADE PURA (SNAP TO GRID ANTIGO) ---
 function makeShortcutDraggable(elmnt) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let isDragging = false;
-
-    elmnt.setAttribute("draggable", "true");
-    elmnt.addEventListener("dragstart", (e) => {
-        e.dataTransfer.setData("text/plain", elmnt.id);
-    });
 
     elmnt.onmousedown = function(e) {
         e = e || window.event;
@@ -909,7 +896,7 @@ function makeShortcutDraggable(elmnt) {
         pos3 = e.clientX; 
         pos4 = e.clientY;
 
-        // Anexa os escutadores globais de mouse
+        // Vínculo global no document garante soltura limpa do mouse ("Sem Chiclete")
         document.addEventListener("mousemove", dragShortcut);
         document.addEventListener("mouseup", closeDragShortcut);
     };
@@ -918,6 +905,7 @@ function makeShortcutDraggable(elmnt) {
         e = e || window.event; 
         e.preventDefault(); 
         isDragging = true;
+        
         pos1 = pos3 - e.clientX; 
         pos2 = pos4 - e.clientY; 
         pos3 = e.clientX; 
@@ -942,67 +930,35 @@ function makeShortcutDraggable(elmnt) {
     }
 
     function closeDragShortcut() {
-        // Remove IMEDIATAMENTE os eventos para desarrastar o mouse (fim do efeito chiclete)
+        // Remove escutadores imediatamente para destravar o cursor
         document.removeEventListener("mousemove", dragShortcut);
         document.removeEventListener("mouseup", closeDragShortcut);
 
         if (isDragging) {
             const selectedShortcuts = document.querySelectorAll('.draggable-shortcut.selected');
             selectedShortcuts.forEach(shortcut => {
-                let snappedLeft = Math.round((shortcut.offsetLeft - 10) / gridX) * gridX + 20;
-                let snappedTop = Math.round((shortcut.offsetTop - 10) / gridY) * gridY + 20;
+                // Alinhamento direto na grade (Sistema Antigo Puro)
+                let snappedLeft = Math.round((shortcut.offsetLeft - 20) / gridX) * gridX + 20;
+                let snappedTop = Math.round((shortcut.offsetTop - 20) / gridY) * gridY + 20;
 
                 const maxH = window.innerHeight - 130;
+                const maxW = window.innerWidth - 85;
+
+                if (snappedTop < 20) snappedTop = 20;
+                if (snappedLeft < 20) snappedLeft = 20;
                 if (snappedTop > maxH) snappedTop = maxH;
+                if (snappedLeft > maxW) snappedLeft = maxW;
 
-                const freeSlot = findFreeGridSlot(shortcut, snappedLeft, snappedTop);
-
-                shortcut.style.left = freeSlot.left + "px"; 
-                shortcut.style.top = freeSlot.top + "px";
+                shortcut.style.left = snappedLeft + "px"; 
+                shortcut.style.top = snappedTop + "px";
 
                 localStorage.setItem("pos_" + shortcut.id, JSON.stringify({ 
                     top: shortcut.style.top, 
                     left: shortcut.style.left 
                 }));
             });
-            isDragging = false;
         }
     }
-}
-
-function findFreeGridSlot(currentShortcut, targetLeft, targetTop) {
-    const allShortcuts = Array.from(document.querySelectorAll('.draggable-shortcut'));
-    const maxH = window.innerHeight - 130;
-    const maxW = window.innerWidth - 85;
-
-    let testLeft = targetLeft;
-    let testTop = targetTop;
-
-    const isOccupied = (left, top) => {
-        return allShortcuts.some(s => {
-            if (s.id === currentShortcut.id || s.style.display === 'none') return false;
-            
-            const sLeft = parseInt(s.style.left) || s.offsetLeft;
-            const sTop = parseInt(s.style.top) || s.offsetTop;
-
-            return Math.abs(sLeft - left) < (gridX / 2) && Math.abs(sTop - top) < (gridY / 2);
-        });
-    };
-
-    while (isOccupied(testLeft, testTop)) {
-        testTop += gridY;
-
-        if (testTop > maxH) { 
-            testTop = 20; 
-            testLeft += gridX; 
-        }
-
-        if (testLeft > maxW) {
-            testLeft = 20; 
-        }
-    }
-
-    return { left: testLeft, top: testTop };
 }
 
 // ==========================================
