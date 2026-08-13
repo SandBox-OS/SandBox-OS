@@ -51,6 +51,13 @@ const DEFAULT_WALLPAPERS = [
     }
 ];
 
+// Mapeamento de Ícones em Pixel Art Customizados
+const PIXEL_ART_ICONS = {
+    'notepad': 'assets/icons/pixel/BlocoDeNotasPixelArt.png',
+    'files': 'assets/icons/pixel/ArquivosPixelArt.png',
+    'calc': 'assets/icons/pixel/CalculadoraPixelArt.png'
+};
+
 let isSignUpMode = true; // Alterna entre Criar Conta (true) e Fazer Login (false)
 
 let highestZIndex = 10;
@@ -70,7 +77,7 @@ let virtualFileSystem = {
 let notepadSaveTimeout = null;
 let lastSavedContent = "";
 
-// Mapeamento de Ícones dos Apps
+// Mapeamento de Ícones Padrão (Emoji) dos Apps
 const appIcons = {
     'notepad': '📝',
     'settings': '⚙️',
@@ -215,6 +222,11 @@ function initializeOS() {
         setWallpaperFromUrl(savedWallpaper);
     }
 
+    // Inicializar campo da fonte selecionada
+    const savedFont = localStorage.getItem('sandbox_user_font') || 'Segoe UI';
+    const fontSelect = document.getElementById('font-style-select');
+    if (fontSelect) fontSelect.value = savedFont;
+
     // Inicializar Eventos do Bloco de Notas (Debounce + Blur)
     initNotepadEvents();
     renderDefaultWallpapers();
@@ -249,6 +261,81 @@ function initializeOS() {
 }
 
 document.addEventListener("DOMContentLoaded", initializeOS);
+
+// --- 🎨 GERENCIAMENTO DE TEMA, FONTE E ÍCONES PIXEL ART ---
+
+function checarSeEWallpaperPadrao(url) {
+    if (!url) return false;
+    return DEFAULT_WALLPAPERS.some(wp => wp.url === url);
+}
+
+function aplicarTemaEIcones(wallpaperUrl) {
+    const isDefault = checarSeEWallpaperPadrao(wallpaperUrl);
+    const userFont = localStorage.getItem('sandbox_user_font') || 'Segoe UI';
+    const noteEl = document.getElementById('font-override-note');
+
+    if (isDefault) {
+        // Ativa Modo Pixel Global
+        document.body.classList.add('pixel-theme');
+        document.body.style.fontFamily = "'Pixelify Sans', cursive, monospace";
+        if (noteEl) noteEl.style.display = 'block';
+
+        // Atualiza para ícones Pixel Art
+        setAppIconMode('pixel');
+    } else {
+        // Desativa Modo Pixel e Usa a Fonte Escolhida pelo Usuário
+        document.body.classList.remove('pixel-theme');
+        document.body.style.fontFamily = `'${userFont}', sans-serif`;
+        if (noteEl) noteEl.style.display = 'none';
+
+        // Retorna para Ícones Padrão
+        setAppIconMode('default');
+    }
+
+    updateTaskbar();
+}
+
+function setAppIconMode(mode) {
+    const apps = ['notepad', 'files', 'calc'];
+
+    apps.forEach(appId => {
+        const imgEl = document.getElementById(`img-icon-${appId}`);
+        const emojiEl = document.getElementById(`emoji-icon-${appId}`);
+        
+        // Elementos no Start Menu
+        const startImgs = document.querySelectorAll(`.img-icon-${appId}`);
+        const startEmojis = document.querySelectorAll(`.emoji-icon-${appId}`);
+
+        if (mode === 'pixel') {
+            const pixelSrc = PIXEL_ART_ICONS[appId];
+            if (imgEl) {
+                imgEl.src = pixelSrc;
+                imgEl.style.display = 'block';
+            }
+            if (emojiEl) emojiEl.style.display = 'none';
+
+            startImgs.forEach(img => {
+                img.src = pixelSrc;
+                img.style.display = 'block';
+            });
+            startEmojis.forEach(em => em.style.display = 'none');
+        } else {
+            if (imgEl) imgEl.style.display = 'none';
+            if (emojiEl) emojiEl.style.display = 'inline';
+
+            startImgs.forEach(img => img.style.display = 'none');
+            startEmojis.forEach(em => em.style.display = 'inline');
+        }
+    });
+}
+
+function alterarFonteManual(novaFonte) {
+    localStorage.setItem('sandbox_user_font', novaFonte);
+    
+    // Reaplica o tema (respeitando se o wallpaper padrão estiver ativo)
+    const currentWallpaper = localStorage.getItem('sandbox_wallpaper') || '';
+    aplicarTemaEIcones(currentWallpaper);
+}
 
 // --- 🧮 CALCULADORA ---
 function appendToCalc(val) {
@@ -473,7 +560,7 @@ function filterStartMenuApps(query) {
     const filter = query.toLowerCase();
     document.querySelectorAll('.start-app-item').forEach(item => {
         const appName = item.getAttribute('data-name');
-        item.style.display = appName.includes(filter) ? 'block' : 'none';
+        item.style.display = appName.includes(filter) ? 'flex' : 'none';
     });
 }
 
@@ -608,6 +695,9 @@ function setWallpaperFromUrl(url) {
         localStorage.setItem('sandbox_wallpaper', url);
         localStorage.setItem('sandbox_wallpaper_type', 'image');
     }
+
+    // Aplica troca de fonte e pacote de ícones pixel de acordo com o wallpaper
+    aplicarTemaEIcones(url);
 }
 
 function setSolidWallpaper(color) {
@@ -625,6 +715,9 @@ function setSolidWallpaper(color) {
         localStorage.setItem('sandbox_wallpaper', color);
         localStorage.setItem('sandbox_wallpaper_type', 'color');
     }
+
+    // Cor sólida desativa tema pixel
+    aplicarTemaEIcones(color);
 }
 
 function renderDefaultWallpapers() {
@@ -646,7 +739,7 @@ function renderDefaultWallpapers() {
         thumb.style.backgroundImage = `url('${wp.url}')`;
         thumb.style.backgroundSize = "cover";
         thumb.style.backgroundPosition = "center";
-        thumb.title = `Wallpaper Padrão: ${wp.name} (Protegido 🔒)`;
+        thumb.title = `Wallpaper Padrão: ${wp.name} (Ativa Modo Pixel 👾)`;
 
         thumb.onclick = () => setWallpaperFromUrl(wp.url);
         container.appendChild(thumb);
@@ -986,7 +1079,7 @@ function makeDraggableAndResizable(elmnt) {
         const appId = elmnt.id.replace('win-', '');
         if (openAppsList[appId] && openAppsList[appId].maximized) return;
         e = e || window.event;
-        if (['BUTTON', 'INPUT', 'LABEL', 'TEXTAREA'].includes(e.target.tagName)) return; 
+        if (['BUTTON', 'INPUT', 'LABEL', 'TEXTAREA', 'SELECT', 'OPTION'].includes(e.target.tagName)) return; 
         e.preventDefault();
         
         elmnt.classList.remove('snap-left', 'snap-right');
@@ -1107,18 +1200,26 @@ function maximizeApp(appId) {
     }
 }
 
-// --- 📌 BARRA DE TAREFAS SÓ COM ÍCONES ---
+// --- 📌 BARRA DE TAREFAS COM SUPORTE A ÍCONES PIXEL ART ---
 function updateTaskbar() {
     const container = document.getElementById('taskbar-apps');
     if (!container) return;
     container.innerHTML = ''; 
+
+    const currentWallpaper = localStorage.getItem('sandbox_wallpaper') || '';
+    const isPixel = checarSeEWallpaperPadrao(currentWallpaper);
+
     Object.keys(openAppsList).forEach(function(appId) {
         const btn = document.createElement('button');
         btn.id = "tb-" + appId;
         btn.className = 'taskbar-button';
         btn.title = appId.toUpperCase();
         
-        btn.innerHTML = `<span class="taskbar-icon">${appIcons[appId] || '🖥️'}</span>`;
+        if (isPixel && PIXEL_ART_ICONS[appId]) {
+            btn.innerHTML = `<img src="${PIXEL_ART_ICONS[appId]}" class="taskbar-icon-img" alt="${appId}">`;
+        } else {
+            btn.innerHTML = `<span class="taskbar-icon">${appIcons[appId] || '🖥️'}</span>`;
+        }
         
         btn.onclick = function() {
             const win = document.getElementById("win-" + appId);
