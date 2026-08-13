@@ -45,7 +45,6 @@ const gridX = 90;
 const gridY = 90; 
 
 let currentFolder = 'geral';
-let notepadSaveTimeout = null;
 let lastSavedContent = "";
 
 const appIcons = {
@@ -216,7 +215,9 @@ function initializeOS() {
         shortcut.ondblclick = function(e) {
             e.stopPropagation();
             const appId = shortcut.id.replace('shortcut-', '');
-            openApp(appId);
+            if (appId !== 'trash-bin' && appId !== 'trash') {
+                openApp(appId);
+            }
         };
     });
 
@@ -316,7 +317,7 @@ function appendToCalc(val) {
     display.value += val;
 }
 
-// --- 📝 BLOCO DE NOTAS (ALTERAÇÃO / ATUALIZAÇÃO ÚNICA) ---
+// --- 📝 BLOCO DE NOTAS (SALVAMENTO APENAS AO CLICAR) ---
 function updateNotepadSaveBtnUI() {
     const btn = document.getElementById("btn-save-notepad");
     if (!btn) return;
@@ -332,18 +333,10 @@ function initNotepadEvents() {
     const textarea = document.getElementById("notepad-textarea");
     if (!textarea) return;
 
+    // Atualiza apenas localmente ao digitar (sem salvar na nuvem automaticamente)
     textarea.addEventListener("input", () => {
-        setNotepadStatus("Digitando...");
-        if (notepadSaveTimeout) clearTimeout(notepadSaveTimeout);
-
-        notepadSaveTimeout = setTimeout(() => {
-            saveNoteToCloud();
-        }, 1500);
-    });
-
-    textarea.addEventListener("blur", () => {
-        if (notepadSaveTimeout) clearTimeout(notepadSaveTimeout);
-        saveNoteToCloud();
+        setNotepadStatus("Alterações pendentes (Clique em salvar)");
+        localStorage.setItem("sandboxos_note_text", textarea.value);
     });
 }
 
@@ -357,12 +350,6 @@ async function saveNoteToCloud() {
     if (!textarea) return;
 
     const currentContent = textarea.value;
-
-    if (currentContent === lastSavedContent) {
-        setNotepadStatus("Salvo na nuvem ✓");
-        return;
-    }
-
     localStorage.setItem("sandboxos_note_text", currentContent);
 
     if (!supabaseClient) {
@@ -461,6 +448,9 @@ async function saveNotepadAsFile() {
         alert("O bloco de notas está vazio!");
         return;
     }
+
+    // Salva também a nota principal na nuvem
+    await saveNoteToCloud();
 
     if (!supabaseClient) {
         alert("Supabase não está configurado!");
@@ -849,8 +839,22 @@ function openFilesForWallpaper() {
 
 // --- 🗑️ LIXEIRA DA ÁREA DE TRABALHO ---
 function initTrashBin() {
-    const trash = document.getElementById("trash-bin");
+    // Procura a lixeira caso possua id especifico ou classe draggable
+    const trash = document.getElementById("trash-bin") || document.getElementById("shortcut-trash");
     if (!trash) return;
+
+    // Torna a lixeira móvel como os outros atalhos
+    if (!trash.classList.contains("draggable-shortcut")) {
+        trash.classList.add("draggable-shortcut");
+    }
+    
+    const coords = localStorage.getItem("pos_" + trash.id);
+    if (coords) {
+        const pos = JSON.parse(coords);
+        trash.style.top = pos.top;
+        trash.style.left = pos.left;
+    }
+    makeShortcutDraggable(trash);
 
     trash.addEventListener("dragover", (e) => {
         e.preventDefault();
@@ -865,7 +869,7 @@ function initTrashBin() {
         e.preventDefault();
         trash.classList.remove("trash-hover");
         const shortcutId = e.dataTransfer.getData("text/plain");
-        if (shortcutId) {
+        if (shortcutId && shortcutId !== trash.id) {
             const el = document.getElementById(shortcutId);
             if (el) {
                 if (el.classList.contains("custom-shortcut")) {
@@ -880,7 +884,7 @@ function initTrashBin() {
     });
 }
 
-// --- 🖱️ DRAG & DROP DE ÍCONES NO DESKTOP ---
+// --- 🖱️ DRAG & DROP DE ÍCONES NO DESKTOP (CORRIGIDO) ---
 function makeShortcutDraggable(elmnt) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let isDragging = false;
@@ -904,8 +908,10 @@ function makeShortcutDraggable(elmnt) {
         isDragging = false;
         pos3 = e.clientX; 
         pos4 = e.clientY;
-        document.onmouseup = closeDragShortcut;
-        document.onmousemove = dragShortcut;
+
+        // Anexa os escutadores globais de mouse
+        document.addEventListener("mousemove", dragShortcut);
+        document.addEventListener("mouseup", closeDragShortcut);
     };
 
     function dragShortcut(e) {
@@ -936,8 +942,9 @@ function makeShortcutDraggable(elmnt) {
     }
 
     function closeDragShortcut() {
-        document.onmouseup = null; 
-        document.onmousemove = null;
+        // Remove IMEDIATAMENTE os eventos para desarrastar o mouse (fim do efeito chiclete)
+        document.removeEventListener("mousemove", dragShortcut);
+        document.removeEventListener("mouseup", closeDragShortcut);
 
         if (isDragging) {
             const selectedShortcuts = document.querySelectorAll('.draggable-shortcut.selected');
@@ -958,6 +965,7 @@ function makeShortcutDraggable(elmnt) {
                     left: shortcut.style.left 
                 }));
             });
+            isDragging = false;
         }
     }
 }
@@ -972,7 +980,7 @@ function findFreeGridSlot(currentShortcut, targetLeft, targetTop) {
 
     const isOccupied = (left, top) => {
         return allShortcuts.some(s => {
-            if (s.id === currentShortcut.id) return false;
+            if (s.id === currentShortcut.id || s.style.display === 'none') return false;
             
             const sLeft = parseInt(s.style.left) || s.offsetLeft;
             const sTop = parseInt(s.style.top) || s.offsetTop;
@@ -1108,7 +1116,6 @@ async function carregarMeusArquivos() {
         return;
     }
 
-    // Filtrar os arquivos considerando alocação exata em pastas
     const filteredFiles = data.filter(file => {
         const ext = file.name.split('.').pop().toLowerCase();
         const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
