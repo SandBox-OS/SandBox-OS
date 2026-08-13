@@ -4,18 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SandBox-OS</title>
-    <!-- Fontes do Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Pixelify+Sans:wght@400;700&family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="style.css">
-    <!-- SDK do Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body onclick="closeStartMenuOutside(event)">
 
-    <!-- Tela / Modal de Boas-Vindas e Login -->
+    <!-- Autenticação / Login -->
     <div id="auth-modal-overlay">
         <div id="auth-modal">
             <div class="auth-header">
@@ -28,19 +26,15 @@
                     <label for="auth-username">Nome de Usuário *</label>
                     <input type="text" id="auth-username" required placeholder="Digite seu usuário">
                 </div>
-
                 <div class="auth-input-group">
                     <label for="auth-password">Senha *</label>
                     <input type="password" id="auth-password" required placeholder="Digite sua senha">
                 </div>
-
                 <div class="auth-input-group">
                     <label for="auth-email">E-mail (Opcional)</label>
                     <input type="email" id="auth-email" placeholder="seu@email.com (opcional)">
                 </div>
-
                 <div id="auth-error-msg"></div>
-
                 <button type="submit" id="auth-submit-btn">Criar Conta e Entrar</button>
             </form>
 
@@ -53,13 +47,10 @@
 
     <!-- Área de Trabalho -->
     <div id="desktop">
-        <!-- Elemento de Vídeo para Wallpapers Animados -->
         <video id="desktop-video-wallpaper" autoplay loop muted playsinline style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none;"></video>
-
-        <!-- Caixa de Seleção Azul -->
         <div id="selection-box"></div>
 
-        <!-- Ícones / Atalhos -->
+        <!-- Atalhos do Sistema -->
         <div class="draggable-shortcut" id="shortcut-notepad" style="top: 20px; left: 20px;">
             <span class="shortcut-icon"><img src="" alt="Bloco de Notas" id="img-icon-notepad" class="app-icon-img"><span id="emoji-icon-notepad">📝</span></span>
             <span class="shortcut-title">Bloco de Notas</span>
@@ -79,22 +70,25 @@
             <span class="shortcut-icon">⚙️</span>
             <span class="shortcut-title">Configurações</span>
         </div>
+
+        <!-- Onde arquivos enviados ao desktop aparecerão -->
+        <div id="custom-desktop-shortcuts"></div>
     </div>
 
     <!-- Menu Iniciar -->
     <div id="start-menu" onclick="event.stopPropagation()">
         <input type="text" class="start-search" placeholder="Digite para pesquisar..." oninput="filterStartMenuApps(this.value)">
         <div style="flex: 1; overflow-y: auto;">
-            <div class="start-app-item" data-name="bloco de notas" onclick="openAppFromStart('notepad')">
+            <div class="start-app-item" data-name="bloco de notas" onclick="openAppFromStart('notepad')" oncontextmenu="showTaskbarContextMenu(event, 'notepad')">
                 <span class="start-icon-container"><img src="" class="start-app-icon-img img-icon-notepad"><span class="emoji-icon-notepad">📝</span></span> Bloco de Notas
             </div>
-            <div class="start-app-item" data-name="meus arquivos" onclick="openAppFromStart('files')">
+            <div class="start-app-item" data-name="meus arquivos" onclick="openAppFromStart('files')" oncontextmenu="showTaskbarContextMenu(event, 'files')">
                 <span class="start-icon-container"><img src="" class="start-app-icon-img img-icon-files"><span class="emoji-icon-files">📁</span></span> Meus Arquivos
             </div>
-            <div class="start-app-item" data-name="calculadora" onclick="openAppFromStart('calc')">
+            <div class="start-app-item" data-name="calculadora" onclick="openAppFromStart('calc')" oncontextmenu="showTaskbarContextMenu(event, 'calc')">
                 <span class="start-icon-container"><img src="" class="start-app-icon-img img-icon-calc"><span class="emoji-icon-calc">🧮</span></span> Calculadora
             </div>
-            <div class="start-app-item" data-name="configuracoes" onclick="openAppFromStart('settings')">
+            <div class="start-app-item" data-name="configuracoes" onclick="openAppFromStart('settings')" oncontextmenu="showTaskbarContextMenu(event, 'settings')">
                 <span>⚙️</span> Configurações
             </div>
         </div>
@@ -115,8 +109,8 @@
         <div class="calendar-grid" id="calendar-days"></div>
     </div>
 
-    <!-- Janelas dos Programas -->
-    
+    <!-- JANELAS DOS PROGRAMAS -->
+
     <!-- Bloco de Notas -->
     <div class="window" id="win-notepad" style="top: 50px; left: 100px;">
         <div class="window-header" id="win-notepad-header">
@@ -128,14 +122,17 @@
             </div>
         </div>
         <div class="window-body" style="display: flex; flex-direction: column;">
-            <div id="notepad-status" style="font-size: 10px; color: #888; background: #111; padding: 2px 8px; text-align: right;">Pronto</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 4px 8px;">
+                <button onclick="saveNotepadAsFile()" style="background: #0078d7; color: white; border: none; padding: 3px 8px; font-size: 11px; border-radius: 3px; cursor: pointer;">💾 Salvar em Arquivos</button>
+                <div id="notepad-status" style="font-size: 10px; color: #888;">Pronto</div>
+            </div>
             <textarea id="notepad-textarea" style="width: 100%; flex: 1; background: #1a1a1a; color: white; border: none; padding: 10px; resize: none; outline: none;"></textarea>
         </div>
         <div class="window-resize-handle"></div>
     </div>
 
     <!-- Meus Arquivos -->
-    <div class="window" id="win-files" style="top: 80px; left: 150px;">
+    <div class="window" id="win-files" style="top: 80px; left: 150px; width: 620px; height: 400px;">
         <div class="window-header" id="win-files-header">
             <span>📁 Meus Arquivos</span>
             <div class="window-controls">
@@ -146,11 +143,16 @@
         </div>
         <div class="window-body">
             <div class="file-manager" style="display: flex; height: 100%;">
-                <div class="file-manager-sidebar" style="width: 130px; display: flex; flex-direction: column; gap: 8px; padding-right: 10px; border-right: 1px solid #333;">
-                    <button id="folder-btn-downloads" class="active" onclick="switchFolder('downloads')">Downloads</button>
-                    <button id="folder-btn-imagens" onclick="switchFolder('imagens')">Imagens</button>
-                    <button id="folder-btn-videos" onclick="switchFolder('videos')">Vídeos</button>
+                <div class="file-manager-sidebar" style="width: 140px; display: flex; flex-direction: column; gap: 6px; padding-right: 10px; border-right: 1px solid #333;">
+                    <button id="folder-btn-geral" class="active" onclick="switchFolder('geral')">🌐 Geral</button>
+                    <button id="folder-btn-downloads" onclick="switchFolder('downloads')">📥 Downloads</button>
+                    <button id="folder-btn-imagens" onclick="switchFolder('imagens')">🖼️ Imagens</button>
+                    <button id="folder-btn-videos" onclick="switchFolder('videos')">🎥 Vídeos</button>
                     
+                    <div id="custom-folders-list" style="display: flex; flex-direction: column; gap: 4px; margin-top: 5px; border-top: 1px solid #333; padding-top: 5px;"></div>
+
+                    <button onclick="createNewFolder()" style="background: #28a745; color: white; border: none; padding: 6px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-top: 5px;">➕ Nova Pasta</button>
+
                     <label style="margin-top: auto; background: #0078d7; padding: 8px; text-align: center; border-radius: 4px; font-size: 11px; cursor: pointer; color: white;">
                         📤 Enviar Arquivo
                         <input type="file" id="file-input-upload" style="display: none;" onchange="uploadArquivo(this)">
@@ -158,8 +160,32 @@
                 </div>
                 
                 <div class="file-manager-content" id="file-list-container" style="flex: 1; padding-left: 10px; display: flex; flex-wrap: wrap; gap: 10px; overflow-y: auto;">
-                    <p style="color: #888; font-size: 12px;">Carregando arquivos da nuvem...</p>
+                    <p style="color: #888; font-size: 12px;">Carregando arquivos...</p>
                 </div>
+            </div>
+        </div>
+        <div class="window-resize-handle"></div>
+    </div>
+
+    <!-- Visualizador de Mídia (Escondido, funciona via evento de abertura) -->
+    <div class="window" id="win-viewer" style="top: 70px; left: 180px; width: 500px; height: 400px;">
+        <div class="window-header" id="win-viewer-header">
+            <span id="viewer-title">🖼️ Visualizador de Mídia</span>
+            <div class="window-controls">
+                <button onclick="minimizeApp('viewer')">─</button>
+                <button onclick="maximizeApp('viewer')">🗖</button>
+                <button class="close-btn" onclick="closeApp('viewer')">✕</button>
+            </div>
+        </div>
+        <div class="window-body" style="display: flex; flex-direction: column; background: #0e0e0e; overflow: hidden;">
+            <div id="viewer-toolbar" style="display: flex; gap: 8px; padding: 6px; background: #1c1c1c; justify-content: center; border-bottom: 1px solid #333;">
+                <button onclick="adjustMediaZoom(0.1)" style="padding: 4px 10px; cursor: pointer;">🔍 + Zoom</button>
+                <button onclick="adjustMediaZoom(-0.1)" style="padding: 4px 10px; cursor: pointer;">🔍 - Zoom</button>
+                <button onclick="resetMediaZoom()" style="padding: 4px 10px; cursor: pointer;">🔄 Resetar</button>
+            </div>
+            <div style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; position: relative;" id="viewer-container">
+                <img id="viewer-img" src="" style="max-width: 100%; max-height: 100%; transition: transform 0.1s ease; display: none;">
+                <video id="viewer-video" controls style="max-width: 100%; max-height: 100%; display: none;"></video>
             </div>
         </div>
         <div class="window-resize-handle"></div>
@@ -220,7 +246,6 @@
                         <h3>Plano de Fundo</h3>
                         <p style="font-size: 11px; color: #aaa; margin-bottom: 10px;">Escolha uma cor, imagem padrão do sistema ou envie a sua</p>
                         
-                        <!-- Cores Sólidas -->
                         <div style="display: flex; gap: 8px; margin-bottom: 15px;">
                             <div class="color-ball" style="background: #1b1b1b;" onclick="setSolidWallpaper('#1b1b1b')"></div>
                             <div class="color-ball" style="background: #0078d7;" onclick="setSolidWallpaper('#0078d7')"></div>
@@ -228,11 +253,9 @@
                             <div class="color-ball" style="background: #00a4ef;" onclick="setSolidWallpaper('#00a4ef')"></div>
                         </div>
 
-                        <!-- Wallpapers Padrão do Sistema (Assets) -->
                         <h4 style="font-size: 12px; margin-bottom: 6px; color: #eee;">Padrões do Sistema</h4>
                         <div id="default-wallpaper-grid" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;"></div>
 
-                        <!-- Wallpapers da Nuvem do Usuário -->
                         <h4 style="font-size: 12px; margin-bottom: 6px; color: #eee;">Seus Arquivos na Nuvem</h4>
                         <button onclick="openFilesForWallpaper()" style="padding: 6px 12px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 12px; margin-bottom: 10px;">Escolher das Imagens</button>
                         <div id="wallpaper-history-grid" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
@@ -242,10 +265,8 @@
                         <h3>Sobre o Sistema</h3>
                         <p style="font-size: 12px; color: #ccc; margin-top: 10px;">Web OS Sandbox v2.0</p>
                         <p id="user-info-display" style="font-size: 12px; color: #00a4ef; margin-top: 5px; margin-bottom: 15px;"></p>
-                        
                         <hr style="border: 0; border-top: 1px solid #3c3c3c; margin: 15px 0;">
 
-                        <!-- Seleção de Estilo de Fonte -->
                         <h3>Aparência do Sistema</h3>
                         <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
                             <label for="font-style-select" style="font-size: 12px; color: #ccc;">Estilo de Fonte:</label>
@@ -283,7 +304,7 @@
         </div>
     </div>
 
-    <!-- MENU DE CONTEXTO DO DESKTOP -->
+    <!-- Menu de Contexto Desktop -->
     <div id="context-menu" class="context-menu" style="display: none; position: absolute; z-index: 999999;">
         <ul>
             <li onclick="createNewNoteShortcut()">📝 Novo Bloco de Notas</li>
@@ -293,7 +314,14 @@
             <li onclick="clearSystemData()">⚠️ Redefinir Sistema</li>
         </ul>
     </div>
-    
+
+    <!-- Menu de Contexto da Barra de Tarefas -->
+    <div id="taskbar-context-menu" class="context-menu" style="display: none; position: absolute; z-index: 999999;">
+        <ul>
+            <li id="pin-toggle-btn" onclick="togglePinApp()">📌 Fixar na Barra de Tarefas</li>
+        </ul>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
