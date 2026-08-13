@@ -224,7 +224,7 @@
                 <button onclick="appendToCalc('1')">1</button>
                 <button onclick="appendToCalc('2')">2</button>
                 <button onclick="appendToCalc('3')">3</button>
-                <button onclick="try { document.getElementById('calc-display').value = eval(document.getElementById('calc-display').value) } catch { document.getElementById('calc-display').value = 'Erro' }" style="grid-row: span 2; background: #0078d7; color: white;">=</button>
+                <button onclick="calculateResult()" style="grid-row: span 2; background: #0078d7; color: white;">=</button>
                 <button onclick="appendToCalc('0')" style="grid-column: span 2;">0</button>
                 <button onclick="appendToCalc('.')">.</button>
             </div>
