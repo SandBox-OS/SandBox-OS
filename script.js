@@ -82,7 +82,8 @@ const appIcons = {
     'notepad': '📝',
     'settings': '⚙️',
     'calc': '🧮',
-    'files': '📁'
+    'files': '📁',
+    'viewer': '🖼️'
 };
 
 // --- 🔐 GERENCIAMENTO DE SESSÃO E AUTENTICAÇÃO ---
@@ -211,8 +212,7 @@ async function logoutUser() {
 function initializeOS() {
     checkUserSession();
 
-    // Restaurar Wallpaper / Plano de Fundo (Imagem, Cor ou Vídeo)
-    // Se não houver nenhum salvo, define "Montanhas Nevada.png" como padrão inicial do sistema
+    // Restaurar Wallpaper / Plano de Fundo
     const savedWallpaper = localStorage.getItem('sandbox_wallpaper') || DEFAULT_WALLPAPERS[0].url;
     const wallpaperType = localStorage.getItem('sandbox_wallpaper_type') || 'image';
 
@@ -227,7 +227,7 @@ function initializeOS() {
     const fontSelect = document.getElementById('font-style-select');
     if (fontSelect) fontSelect.value = savedFont;
 
-    // Inicializar Eventos do Bloco de Notas (Debounce + Blur)
+    // Inicializar Eventos
     initNotepadEvents();
     renderDefaultWallpapers();
     renderWallpaperHistory();
@@ -275,20 +275,14 @@ function aplicarTemaEIcones(wallpaperUrl) {
     const noteEl = document.getElementById('font-override-note');
 
     if (isDefault) {
-        // Ativa Modo Pixel Global
         document.body.classList.add('pixel-theme');
         document.body.style.fontFamily = "'Pixelify Sans', cursive, monospace";
         if (noteEl) noteEl.style.display = 'block';
-
-        // Atualiza para ícones Pixel Art
         setAppIconMode('pixel');
     } else {
-        // Desativa Modo Pixel e Usa a Fonte Escolhida pelo Usuário
         document.body.classList.remove('pixel-theme');
         document.body.style.fontFamily = `'${userFont}', sans-serif`;
         if (noteEl) noteEl.style.display = 'none';
-
-        // Retorna para Ícones Padrão
         setAppIconMode('default');
     }
 
@@ -302,7 +296,6 @@ function setAppIconMode(mode) {
         const imgEl = document.getElementById(`img-icon-${appId}`);
         const emojiEl = document.getElementById(`emoji-icon-${appId}`);
         
-        // Elementos no Start Menu
         const startImgs = document.querySelectorAll(`.img-icon-${appId}`);
         const startEmojis = document.querySelectorAll(`.emoji-icon-${appId}`);
 
@@ -331,8 +324,6 @@ function setAppIconMode(mode) {
 
 function alterarFonteManual(novaFonte) {
     localStorage.setItem('sandbox_user_font', novaFonte);
-    
-    // Reaplica o tema (respeitando se o wallpaper padrão estiver ativo)
     const currentWallpaper = localStorage.getItem('sandbox_wallpaper') || '';
     aplicarTemaEIcones(currentWallpaper);
 }
@@ -696,7 +687,6 @@ function setWallpaperFromUrl(url) {
         localStorage.setItem('sandbox_wallpaper_type', 'image');
     }
 
-    // Aplica troca de fonte e pacote de ícones pixel de acordo com o wallpaper
     aplicarTemaEIcones(url);
 }
 
@@ -716,7 +706,6 @@ function setSolidWallpaper(color) {
         localStorage.setItem('sandbox_wallpaper_type', 'color');
     }
 
-    // Cor sólida desativa tema pixel
     aplicarTemaEIcones(color);
 }
 
@@ -808,7 +797,7 @@ function openFilesForWallpaper() {
     switchFolder('imagens');
 }
 
-// --- 🖱️ DRAG & DROP ÍCONES (COM PREVENÇÃO DE COLISÃO) ---
+// --- 🖱️ DRAG & DROP ÍCONES ---
 function makeShortcutDraggable(elmnt) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let isDragging = false;
@@ -921,7 +910,7 @@ function findFreeGridSlot(currentShortcut, targetLeft, targetTop) {
 }
 
 // ==========================================
-// 📁 SUPABASE STORAGE (MEUS ARQUIVOS)
+// 📁 SUPABASE STORAGE (MEUS ARQUIVOS ATUALIZADO)
 // ==========================================
 
 function switchFolder(folderName) {
@@ -1020,7 +1009,7 @@ async function carregarMeusArquivos() {
         let wallpaperBtnHTML = (isImage || isVideo) ? `<button onclick="setWallpaperFromUrl('${publicUrlData.publicUrl}')" style="background: #0078d7; border: none; color: white; border-radius: 3px; padding: 2px 4px; font-size: 9px; cursor: pointer; margin-top: 4px; width: 100%;">Usar Wallpaper</button>` : '';
 
         fileItem.innerHTML = `
-            <div style="font-size: 28px; cursor: pointer;" onclick="window.open('${publicUrlData.publicUrl}', '_blank')" title="Clique para abrir">
+            <div style="font-size: 28px; cursor: pointer;" onclick="openMediaViewer('${publicUrlData.publicUrl}', '${ext}')" title="Clique para abrir e visualizar">
                 ${isImage ? '🖼️' : isVideo ? '🎥' : '📄'}
             </div>
             <span style="font-size: 11px; display: block; margin-top: 4px; color: #eee; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; width: 100%;">${displayName}</span>
@@ -1268,4 +1257,96 @@ function switchSettingsTab(tabName) {
 
     if (activeBtn) activeBtn.classList.add('active');
     if (activeContent) activeContent.classList.add('active');
+}
+
+// ==========================================
+// 🚀 NOVAS FUNCIONALIDADES ADICIONADAS
+// ==========================================
+
+// --- 🖼️ VISUALIZADOR DE MÍDIAS COM ZOOM & FULLSCREEN ---
+let currentZoom = 1;
+
+function openMediaViewer(url, ext) {
+    const win = document.getElementById("win-viewer");
+    const container = document.getElementById("viewer-media-container");
+    if (!win || !container) return;
+
+    currentZoom = 1;
+    const isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(ext.toLowerCase());
+
+    if (isVideo) {
+        container.innerHTML = `
+            <video src="${url}" controls autoplay style="max-width: 100%; max-height: 100%; border-radius: 4px;"></video>
+        `;
+    } else {
+        container.innerHTML = `
+            <img id="viewer-img" src="${url}" style="max-width: 100%; max-height: 100%; transition: transform 0.2s ease; transform: scale(1);" />
+        `;
+    }
+
+    openApp('viewer');
+}
+
+function zoomMedia(factor) {
+    const img = document.getElementById("viewer-img");
+    if (!img) return;
+
+    currentZoom += factor;
+    if (currentZoom < 0.2) currentZoom = 0.2;
+    if (currentZoom > 5) currentZoom = 5;
+
+    img.style.transform = `scale(${currentZoom})`;
+}
+
+function resetZoomMedia() {
+    const img = document.getElementById("viewer-img");
+    if (!img) return;
+    currentZoom = 1;
+    img.style.transform = "scale(1)";
+}
+
+// --- 📄 SALVAR NOTA DO BLOCO DE NOTAS EM ARQUIVO LOCAL (.TXT) ---
+function saveNotepadAsFile() {
+    const textarea = document.getElementById("notepad-textarea");
+    if (!textarea) return;
+
+    const content = textarea.value;
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const link = document.createElement("a");
+
+    link.href = URL.createObjectURL(blob);
+    link.download = `Nota_${new Date().toISOString().slice(0,10)}.txt`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
+// --- 📌 PIN / FIXAR ATALHOS NO DESKTOP ---
+function toggleDesktopShortcut(appId, appName, emoji) {
+    const desktop = document.getElementById("desktop");
+    const shortcutId = `shortcut-${appId}`;
+    let shortcut = document.getElementById(shortcutId);
+
+    if (shortcut) {
+        shortcut.remove();
+        localStorage.removeItem("pos_" + shortcutId);
+    } else {
+        shortcut = document.createElement("div");
+        shortcut.id = shortcutId;
+        shortcut.className = "shortcut draggable-shortcut";
+        shortcut.style.top = "20px";
+        shortcut.style.left = "20px";
+        
+        shortcut.innerHTML = `
+            <div class="shortcut-icon" id="emoji-icon-${appId}">${emoji}</div>
+            <span class="shortcut-label">${appName}</span>
+        `;
+
+        desktop.appendChild(shortcut);
+        makeShortcutDraggable(shortcut);
+
+        shortcut.ondblclick = function(e) {
+            e.stopPropagation();
+            openApp(appId);
+        };
+    }
 }
