@@ -50,7 +50,7 @@
         <video id="desktop-video-wallpaper" autoplay loop muted playsinline style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none;"></video>
         <div id="selection-box"></div>
 
-        <!-- Atalhos do Sistema -->
+        <!-- Atalhos Fixos do Sistema -->
         <div class="draggable-shortcut" id="shortcut-notepad" style="top: 20px; left: 20px;">
             <span class="shortcut-icon"><img src="" alt="Bloco de Notas" id="img-icon-notepad" class="app-icon-img"><span id="emoji-icon-notepad">📝</span></span>
             <span class="shortcut-title">Bloco de Notas</span>
@@ -71,7 +71,7 @@
             <span class="shortcut-title">Configurações</span>
         </div>
 
-        <!-- Onde arquivos enviados ao desktop aparecerão -->
+        <!-- Onde arquivos e atalhos adicionados à área de trabalho aparecerão -->
         <div id="custom-desktop-shortcuts"></div>
     </div>
 
@@ -79,16 +79,16 @@
     <div id="start-menu" onclick="event.stopPropagation()">
         <input type="text" class="start-search" placeholder="Digite para pesquisar..." oninput="filterStartMenuApps(this.value)">
         <div style="flex: 1; overflow-y: auto;">
-            <div class="start-app-item" data-name="bloco de notas" onclick="openAppFromStart('notepad')" oncontextmenu="showTaskbarContextMenu(event, 'notepad')">
+            <div class="start-app-item" data-name="bloco de notas" onclick="openAppFromStart('notepad')">
                 <span class="start-icon-container"><img src="" class="start-app-icon-img img-icon-notepad"><span class="emoji-icon-notepad">📝</span></span> Bloco de Notas
             </div>
-            <div class="start-app-item" data-name="meus arquivos" onclick="openAppFromStart('files')" oncontextmenu="showTaskbarContextMenu(event, 'files')">
+            <div class="start-app-item" data-name="meus arquivos" onclick="openAppFromStart('files')">
                 <span class="start-icon-container"><img src="" class="start-app-icon-img img-icon-files"><span class="emoji-icon-files">📁</span></span> Meus Arquivos
             </div>
-            <div class="start-app-item" data-name="calculadora" onclick="openAppFromStart('calc')" oncontextmenu="showTaskbarContextMenu(event, 'calc')">
+            <div class="start-app-item" data-name="calculadora" onclick="openAppFromStart('calc')">
                 <span class="start-icon-container"><img src="" class="start-app-icon-img img-icon-calc"><span class="emoji-icon-calc">🧮</span></span> Calculadora
             </div>
-            <div class="start-app-item" data-name="configuracoes" onclick="openAppFromStart('settings')" oncontextmenu="showTaskbarContextMenu(event, 'settings')">
+            <div class="start-app-item" data-name="configuracoes" onclick="openAppFromStart('settings')">
                 <span>⚙️</span> Configurações
             </div>
         </div>
@@ -122,9 +122,10 @@
             </div>
         </div>
         <div class="window-body" style="display: flex; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 4px 8px;">
-                <button onclick="saveNotepadAsFile()" style="background: #0078d7; color: white; border: none; padding: 3px 8px; font-size: 11px; border-radius: 3px; cursor: pointer;">💾 Salvar em Arquivos</button>
-                <div id="notepad-status" style="font-size: 10px; color: #888;">Pronto</div>
+            <div style="display: flex; gap: 6px; align-items: center; background: #111; padding: 4px 8px;">
+                <button onclick="saveNotepadAsFile()" style="background: #0078d7; color: white; border: none; padding: 3px 8px; font-size: 11px; border-radius: 3px; cursor: pointer;">💾 Salvar nos Meus Arquivos</button>
+                <button onclick="downloadNotepadFile()" style="background: #333; color: white; border: 1px solid #555; padding: 3px 8px; font-size: 11px; border-radius: 3px; cursor: pointer;">⬇️ Baixar .txt</button>
+                <div id="notepad-status" style="font-size: 10px; color: #888; margin-left: auto;">Pronto</div>
             </div>
             <textarea id="notepad-textarea" style="width: 100%; flex: 1; background: #1a1a1a; color: white; border: none; padding: 10px; resize: none; outline: none;"></textarea>
         </div>
@@ -167,8 +168,8 @@
         <div class="window-resize-handle"></div>
     </div>
 
-    <!-- Visualizador de Mídia (Escondido, funciona via evento de abertura) -->
-    <div class="window" id="win-viewer" style="top: 70px; left: 180px; width: 500px; height: 400px;">
+    <!-- SISTEMA 2: Visualizador de Mídia (Programa ocultado que não aparece no menu nem na barra diretamente) -->
+    <div class="window" id="win-viewer" style="top: 70px; left: 180px; width: 550px; height: 420px;">
         <div class="window-header" id="win-viewer-header">
             <span id="viewer-title">🖼️ Visualizador de Mídia</span>
             <div class="window-controls">
@@ -179,11 +180,11 @@
         </div>
         <div class="window-body" style="display: flex; flex-direction: column; background: #0e0e0e; overflow: hidden;">
             <div id="viewer-toolbar" style="display: flex; gap: 8px; padding: 6px; background: #1c1c1c; justify-content: center; border-bottom: 1px solid #333;">
-                <button onclick="adjustMediaZoom(0.1)" style="padding: 4px 10px; cursor: pointer;">🔍 + Zoom</button>
-                <button onclick="adjustMediaZoom(-0.1)" style="padding: 4px 10px; cursor: pointer;">🔍 - Zoom</button>
-                <button onclick="resetMediaZoom()" style="padding: 4px 10px; cursor: pointer;">🔄 Resetar</button>
+                <button onclick="zoomMedia(0.1)" style="padding: 4px 10px; cursor: pointer; background: #333; color: white; border: 1px solid #555; border-radius: 3px;">🔍 + Zoom</button>
+                <button onclick="zoomMedia(-0.1)" style="padding: 4px 10px; cursor: pointer; background: #333; color: white; border: 1px solid #555; border-radius: 3px;">🔍 - Zoom</button>
+                <button onclick="resetZoomMedia()" style="padding: 4px 10px; cursor: pointer; background: #333; color: white; border: 1px solid #555; border-radius: 3px;">🔄 Resetar</button>
             </div>
-            <div style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; position: relative;" id="viewer-container">
+            <div style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; position: relative;" id="viewer-media-container">
                 <img id="viewer-img" src="" style="max-width: 100%; max-height: 100%; transition: transform 0.1s ease; display: none;">
                 <video id="viewer-video" controls style="max-width: 100%; max-height: 100%; display: none;"></video>
             </div>
@@ -315,10 +316,15 @@
         </ul>
     </div>
 
-    <!-- Menu de Contexto da Barra de Tarefas -->
+    <!-- MENU DE CONTEXTO DOS ARQUIVOS (SISTEMA 1) -->
+    <div id="file-context-menu" class="context-menu" style="display: none; position: absolute; z-index: 999999;">
+        <ul id="file-context-options"></ul>
+    </div>
+
+    <!-- MENU DE CONTEXTO DA BARRA DE TAREFAS (SISTEMA 3) -->
     <div id="taskbar-context-menu" class="context-menu" style="display: none; position: absolute; z-index: 999999;">
         <ul>
-            <li id="pin-toggle-btn" onclick="togglePinApp()">📌 Fixar na Barra de Tarefas</li>
+            <li id="pin-toggle-btn" onclick="togglePinCurrentApp()">📌 Fixar / Desfixar da Barra</li>
         </ul>
     </div>
 
