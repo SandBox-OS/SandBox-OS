@@ -200,14 +200,9 @@ function initializeOS() {
     renderDefaultWallpapers();
     renderWallpaperHistory();
     initContextMenu();
-    initTrashBin();
     initStartMenuContextMenu();
 
-    document.querySelectorAll('.draggable-shortcut, #trash-bin').forEach(shortcut => {
-        if (!shortcut.classList.contains('draggable-shortcut')) {
-            shortcut.classList.add('draggable-shortcut');
-        }
-        
+    document.querySelectorAll('.draggable-shortcut').forEach(shortcut => {
         const coords = localStorage.getItem("pos_" + shortcut.id);
         if (coords) {
             const pos = JSON.parse(coords);
@@ -327,7 +322,6 @@ function calculateResult() {
     const display = document.getElementById('calc-display');
     if (!display) return;
     try {
-        // Substituído o eval por avaliação matemática segura usando Function
         const safeEval = new Function(`return ${display.value}`);
         display.value = safeEval();
     } catch {
@@ -852,40 +846,7 @@ function openFilesForWallpaper() {
     switchFolder('imagens');
 }
 
-// --- 🗑️ LIXEIRA DA ÁREA DE TRABALHO ---
-function initTrashBin() {
-    const trash = document.getElementById("trash-bin");
-    if (!trash) return;
-
-    trash.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        trash.classList.add("trash-hover");
-    });
-
-    trash.addEventListener("dragleave", () => {
-        trash.classList.remove("trash-hover");
-    });
-
-    trash.addEventListener("drop", (e) => {
-        e.preventDefault();
-        trash.classList.remove("trash-hover");
-        const shortcutId = e.dataTransfer.getData("text/plain");
-        if (shortcutId) {
-            const el = document.getElementById(shortcutId);
-            if (el) {
-                if (el.classList.contains("custom-shortcut")) {
-                    const serverFileName = el.getAttribute("data-filename");
-                    if (serverFileName) removeDesktopItemByServerFile(serverFileName);
-                    el.remove();
-                } else if (confirm("Deseja remover este atalho do Desktop?")) {
-                    el.style.display = "none";
-                }
-            }
-        }
-    });
-}
-
-// --- 🖱️ DRAG & DROP COM GRADE ---
+// --- 🖱️ DRAG & DROP COM GRADE E COLISÃO MANUAL (CORRIGIDO) ---
 function makeShortcutDraggable(elmnt) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let isDragging = false;
@@ -920,7 +881,11 @@ function makeShortcutDraggable(elmnt) {
         pos4 = e.clientY;
 
         const selectedShortcuts = document.querySelectorAll('.draggable-shortcut.selected');
-        
+        const trash = document.getElementById('trash-bin');
+        let trashRect = null;
+        if (trash) trashRect = trash.getBoundingClientRect();
+        let hoveringTrash = false;
+
         selectedShortcuts.forEach(shortcut => {
             let newTop = shortcut.offsetTop - pos2; 
             let newLeft = shortcut.offsetLeft - pos1;
@@ -934,7 +899,20 @@ function makeShortcutDraggable(elmnt) {
 
             shortcut.style.top = newTop + "px"; 
             shortcut.style.left = newLeft + "px";
+
+            // Checa intersecção com a lixeira ao arrastar
+            if (trashRect && shortcut.id !== 'trash-bin') {
+                const rect = shortcut.getBoundingClientRect();
+                if (!(rect.right < trashRect.left || rect.left > trashRect.right || rect.bottom < trashRect.top || rect.top > trashRect.bottom)) {
+                    hoveringTrash = true;
+                }
+            }
         });
+
+        if (trash) {
+            if (hoveringTrash) trash.classList.add("trash-hover");
+            else trash.classList.remove("trash-hover");
+        }
     }
 
     function closeDragShortcut() {
@@ -943,12 +921,62 @@ function makeShortcutDraggable(elmnt) {
 
         if (isDragging) {
             const selectedShortcuts = document.querySelectorAll('.draggable-shortcut.selected');
+            const trash = document.getElementById('trash-bin');
+            let trashRect = null;
+            if (trash) {
+                trashRect = trash.getBoundingClientRect();
+                trash.classList.remove("trash-hover");
+            }
+
             selectedShortcuts.forEach(shortcut => {
+                // SE O ARQUIVO ESTIVER EM CIMA DA LIXEIRA, APAGUE
+                if (trashRect && shortcut.id !== 'trash-bin') {
+                    const rect = shortcut.getBoundingClientRect();
+                    if (!(rect.right < trashRect.left || rect.left > trashRect.right || rect.bottom < trashRect.top || rect.top > trashRect.bottom)) {
+                        if (shortcut.classList.contains("custom-shortcut")) {
+                            const serverFileName = shortcut.getAttribute("data-filename");
+                            if (serverFileName) removeDesktopItemByServerFile(serverFileName);
+                            shortcut.remove();
+                        } else if (confirm("Deseja remover este atalho do Desktop?")) {
+                            shortcut.style.display = "none";
+                        }
+                        return; // Cancela a colagem na grade, pois foi deletado
+                    }
+                }
+
+                // SISTEMA DE GRADE
                 let snappedLeft = Math.round((shortcut.offsetLeft - 20) / gridX) * gridX + 20;
                 let snappedTop = Math.round((shortcut.offsetTop - 20) / gridY) * gridY + 20;
 
                 const maxH = window.innerHeight - 130;
                 const maxW = window.innerWidth - 85;
+
+                // EVITAR COLISÃO ENTRE ÍCONES
+                let collision = true;
+                let attempts = 0; // Prevenir loop infinito se lotar
+                while(collision && attempts < 50) {
+                    collision = false;
+                    document.querySelectorAll('.draggable-shortcut').forEach(other => {
+                        if (other !== shortcut && other.style.display !== 'none') {
+                            let otherLeft = parseInt(other.style.left) || 0;
+                            let otherTop = parseInt(other.style.top) || 0;
+                            
+                            // Se bater exatamente ou muito perto na grade
+                            if (Math.abs(otherLeft - snappedLeft) < 10 && Math.abs(otherTop - snappedTop) < 10) {
+                                collision = true;
+                            }
+                        }
+                    });
+                    
+                    if (collision) {
+                        snappedTop += gridY;
+                        if (snappedTop > maxH) {
+                            snappedTop = 20;
+                            snappedLeft += gridX;
+                        }
+                    }
+                    attempts++;
+                }
 
                 if (snappedTop < 20) snappedTop = 20;
                 if (snappedLeft < 20) snappedLeft = 20;
